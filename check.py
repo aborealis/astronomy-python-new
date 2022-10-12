@@ -6,39 +6,63 @@ from datetime import datetime, timedelta
 from email.utils import localtime
 import components.time as tm
 import swisseph as swe
+from vector import Vector
 
 
-def julian_day(naive_datetime: datetime,
-               time_zone: float,) -> float:
+def julian_day(aware_datetime: datetime) -> float:
     """
     Возвращает юлианский день по дате.
     """
-    localtime = tm.__localtime__(naive_datetime, time_zone)
-    localtime_utc = tm.__localtime_utc__(localtime)
     return swe.julday(
-        localtime_utc.year,
-        localtime_utc.month,
-        localtime_utc.day,
-        localtime_utc.hour + localtime_utc.minute/60
+        aware_datetime.year,
+        aware_datetime.month,
+        aware_datetime.day,
+        aware_datetime.hour + aware_datetime.minute/60
     )
+
+
+def get_asc(jday: float, geo_lon: float, geo_lat: float) -> list[float]:
+    """
+    Извлекает информацию по куспидам домов.
+    """
+    cusp_degrees = swe.houses(
+        jday, geo_lat, geo_lon, bytes('R', 'ascii')
+    )[0]
+    return cusp_degrees[0]
 
 
 # ╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌
 # Example of usage:
 # ╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌
 if __name__ == '__main__':
-    jday = julian_day(
-        datetime(2022, 10, 10, 21, 58),
-        time_zone=4,
-    )
-
     ltime = tm.__localtime__(datetime(2022, 10, 10, 21, 58),
                              time_zone=4,)
     ltime_utc = tm.__localtime_utc__(ltime)
 
+    jday = julian_day(ltime_utc)
     print('Julian day swe:', jday)
     print('Julian day own:', tm.__julian_day__(ltime))
     print('Julian day own:', tm.__julian_day__(ltime_utc))
 
     print('GST swe:', timedelta(hours=swe.sidtime(jday)))
     print('GST own:', timedelta(hours=tm.__gst__(ltime_utc)))
+
+    swe_asc = get_asc(
+        jday,
+        geo_lon=44 + 46/60,
+        geo_lat=41 + 43/50,)
+    vector = Vector(
+        datetime(2022, 10, 10, 21, 58),
+        time_zone=4,
+        geo_lon=44 + 46/60,
+        geo_lat=41 + 43/50,
+    )
+    own_asc = vector.asc()
+
+    print('ASC swe:', swe_asc)
+    print('ASC_own:', own_asc)
+
+    vector.set_ecliptical(swe_asc, 0)
+    print('altitude (swe asc):', vector.horizontal().alt)
+    vector.set_ecliptical(own_asc, 0)
+    print('altitude (own asc):', vector.horizontal().alt)

@@ -2,6 +2,7 @@
 Time-related functions
 """
 from math import floor
+from numpy import sin, cos, pi
 from datetime import datetime, timedelta, timezone
 
 
@@ -53,23 +54,37 @@ def __julian_day__(timeaware_utc: datetime) -> float:
 
 def __gst__(timeaware_utc: datetime):
     """
-    Returns greenwich sidereal mean time
+    Returns greenwich sidereal apparent time
     """
     jday = __julian_day__(timeaware_utc)
+    # 2000 January 1, 12h
     J2000 = 2451545.0
-    midnight = floor(jday) + 0.5
-    days_since_midnight = jday - midnight
-    hours_since_midnight = days_since_midnight * 24
-    days_since_epoch = jday - J2000
-    centuries_since_epoch = days_since_epoch / 36525
-    whole_days_since_epoch = midnight - J2000
 
-    GMST = (6.697374558
-            + 0.06570982441908 * whole_days_since_epoch
-            + 1.00273790935 * hours_since_midnight
-            + 0.000026 * centuries_since_epoch**2) % 24
+    if jday - floor(jday) < 0.5:
+        # from nnon to midnight
+        past_midnight = floor(jday) - 0.5
+    else:
+        # from midnight to noon
+        past_midnight = floor(jday) + 0.5
 
-    return GMST
+    days_since_j2000 = jday - J2000
+    centuries_since_j2000 = days_since_j2000 / 36525
+    delta_jdays_ut = past_midnight - J2000
+    hours_since_midnight = (jday - past_midnight) * 24
+    GMST = (6.697375
+            + 0.065707485828 * delta_jdays_ut
+            + 1.0027379 * hours_since_midnight
+            + 0.0854103 * centuries_since_j2000
+            + 0.0000258 * centuries_since_j2000**2) % 24
+
+    # The equation of the equinoxes
+    epsilon = __inclination_ecliptic__(timeaware_utc)
+    sun_mean_long = (280.47 + 0.98565 * days_since_j2000) % 360
+    nnode_long = (125.04 - 0.052954 * days_since_j2000) % 360
+    eqeq = (-0.000319 * sin(nnode_long * pi / 180)
+            - 0.000024 * sin(2 * sun_mean_long / 180)) * cos(epsilon * pi / 180)
+
+    return GMST + eqeq
 
 
 def __lst__(timeaware_utc: datetime, geo_lon: float):
