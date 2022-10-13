@@ -24,6 +24,19 @@ def atan_btw_xy(x: float, y: float) -> float:
     return alpha
 
 
+def true_distance(abs_degree1: float, abs_degree2: float) -> float:
+    """
+    Returns minimum angle between two degrees.
+    """
+    distance = abs_degree2 - abs_degree1
+    if abs(distance) > 180:
+        if abs_degree2 < abs_degree1:
+            distance += 360
+        else:
+            distance -= 360
+    return abs(distance)
+
+
 class __Constants__(NamedTuple):
     """
     Constants shared amomg functions
@@ -338,7 +351,7 @@ class Vector:
 
     def asc(self):
         """
-        Returns sscending Zodiac degree
+        Returns ascending Zodiac degree
         """
         # time since Aries raising (tsa, in radians)
         tsa = (self.lst * 15 + 90) % 360
@@ -359,6 +372,23 @@ class Vector:
         xyz_ecl = self.__eqt_to_ecl_cartesian__(cartesian)
 
         return self.__cartesian_to_spherical__(xyz_ecl)['horz_angle']
+
+    def umd(self):
+        """
+        Returns upper meridian distance, UMD
+        of <self> object
+        """
+        return true_distance(
+            self.equatorial().ra,
+            self.ramc()
+        )
+
+    def dsa(self):
+        """
+        Returns diurnal semiarc
+        """
+        asc_diff = self.equatorial().ra - self.oblique_asc()
+        return (90 + asc_diff) % 360
 
 
 # ╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌
@@ -403,3 +433,8 @@ if __name__ == '__main__':
 
     # The same as real ascention of True East above
     print('Oblique Ascention of ASC:', vector.oblique_asc())
+
+    # Uppper Meridian Distance (UMD) and
+    # Diurnal Semiarc (DSA) of a given vector
+    print('UMD:', vector.umd())
+    print('DSA:', vector.dsa())
