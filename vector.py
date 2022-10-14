@@ -4,7 +4,7 @@ spherical coordinate systems
 """
 from cmath import tan
 from datetime import datetime, timedelta
-from math import asin, atan
+from math import asin, atan, floor
 from numpy import cos, sin, pi, tan
 from typing import NamedTuple, Union
 import components.time as tm
@@ -226,11 +226,11 @@ class Vector:
         sin_e = self.__constants__.sin_e
         cos_e = self.__constants__.cos_e
 
-        x_ect = eqt.x
-        y_ect = cos_e * eqt.y + sin_e * eqt.z
-        z_ect = - sin_e * eqt.y + cos_e * eqt.z
+        x_ecl = eqt.x
+        y_ecl = cos_e * eqt.y + sin_e * eqt.z
+        z_ecl = - sin_e * eqt.y + cos_e * eqt.z
 
-        return __Cartesian__(x_ect, y_ect, z_ect)
+        return __Cartesian__(x_ecl, y_ecl, z_ecl)
 
     def __eqt_to_hrz_cartesian__(self, eqt: __Cartesian__) -> __Cartesian__:
         """
@@ -339,6 +339,10 @@ class Vector:
         dec = self.equatorial().dec
         ra = self.equatorial().ra
         tan_d = tan(dec * pi / 180)
+
+        # In case of no ascention
+        if abs(tan_p * tan_d) > 1:
+            return None
         ascention_diff = asin(tan_p * tan_d) * 180 / pi
         return (ra - ascention_diff) % 360
 
@@ -368,10 +372,19 @@ class Vector:
         x = tan_p
         dec_asc = atan_btw_xy(x, y)
 
-        cartesian = self.cartesian(__Equatorial__(ra_asc, dec_asc))
-        xyz_ecl = self.__eqt_to_ecl_cartesian__(cartesian)
+        xyz_eqt = self.cartesian(__Equatorial__(ra_asc, dec_asc))
+        xyz_ecl = self.__eqt_to_ecl_cartesian__(xyz_eqt)
+        possible_asc = self.__cartesian_to_spherical__(xyz_ecl)['horz_angle']
 
-        return self.__cartesian_to_spherical__(xyz_ecl)['horz_angle']
+        # Now we need to ensure that asc is still on the eastern
+        # horizon. Iif it is on the west, it is descendant (such
+        # a situatin may happen when ecliptic/horizon cross-point
+        # travels through the South or North beyond a Polar Circle)
+        xyz_hrz = self.__eqt_to_hrz_cartesian__(xyz_eqt)
+        if xyz_hrz.x < 0:
+            possible_asc += 180
+
+        return possible_asc % 360
 
     def umd(self):
         """
@@ -387,8 +400,20 @@ class Vector:
         """
         Returns diurnal semiarc
         """
-        asc_diff = self.equatorial().ra - self.oblique_asc()
+        oblique_ascention = self.oblique_asc()
+        if oblique_ascention is None:
+            return None
+        asc_diff = self.equatorial().ra - oblique_ascention
         return (90 + asc_diff) % 360
+
+    @classmethod
+    def show_degrees_minutes(cls, deg: float) -> str:
+        """
+        Transforms float degree into degree and minute
+        """
+        degree = floor(deg)
+        minute = (deg - degree) * 60
+        return f"{degree}º {round(minute)}'"
 
 
 # ╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌

@@ -35,7 +35,13 @@ def get_asc(jday: float, geo_lon: float, geo_lat: float) -> list[float]:
 # Example of usage:
 # ╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌
 if __name__ == '__main__':
-    ltime = tm.__localtime__(datetime(2022, 10, 10, 21, 58),
+    dt = datetime(2022, 10, 10, 17, 40)
+    geo = dict(
+        geo_lon=44 + 46/60,
+        geo_lat=25 + 41.713664,
+    )
+
+    ltime = tm.__localtime__(dt,
                              time_zone=4,)
     ltime_utc = tm.__localtime_utc__(ltime)
 
@@ -48,14 +54,11 @@ if __name__ == '__main__':
     print('GST own:', timedelta(hours=tm.__gst__(ltime_utc)))
 
     swe_asc = get_asc(
-        jday,
-        geo_lon=44 + 46/60,
-        geo_lat=41 + 43/50,)
+        jday, **geo)
     vector = Vector(
-        datetime(2022, 10, 10, 21, 58),
+        naive_datetime=dt,
         time_zone=4,
-        geo_lon=44 + 46/60,
-        geo_lat=41 + 43/50,
+        **geo,
     )
     own_asc = vector.asc()
 

@@ -89,27 +89,29 @@ def ecliptic(vector: Vector, ax: Axes):
             fontsize=8, color=(.5, 0, .5))
 
 
-def point(vector: Vector, point_coordinates: dict, ax: Axes):
+def point(vector: Vector, point: dict, ax: Axes):
     """
     Draw chosen point
     """
     # Draw pont
-    vector.set_ecliptical(**point_coordinates)
+    vector.set_ecliptical(point['lon'], point['lat'])
     x, y, z = xyz_hrz(vector)
-    ax.text(x, y, z, s='P', color="red")
     ax.plot([x, 0], [y, 0], [z, 0], color='red',
             linewidth=1, linestyle='dotted')
+    ax.scatter(x, y, z, color=point['color'], label=point['label'])
 
 
-def semiarc(vector: Vector, point_coordinates: dict, ax: Axes, s_type: str):
+def semiarc(vector: Vector, point: dict, ax: Axes, s_type: str):
     """
     Draw diurnal semiarc
     """
-    vector.set_ecliptical(**point_coordinates)
+    vector.set_ecliptical(point['lon'], point['lat'])
     # Point parameters
     point_ra = vector.equatorial().ra
     point_dec = vector.equatorial().dec
     point_dsa = vector.dsa()
+    if point_dsa is None:
+        return None
     point_umd = vector.umd()
     eastern = vector.cartesian_horizontal().x > 0
 
@@ -124,13 +126,14 @@ def semiarc(vector: Vector, point_coordinates: dict, ax: Axes, s_type: str):
             label=s_type,
             linewidth=0.7 if s_type == 'DSA' else 1.2,
             color="red" if s_type == 'DSA' else "blue")
+    return None
 
 
-def eqt_projection(vector: Vector, point_coordinates: dict, ax: Axes):
+def eqt_projection(vector: Vector, point: dict, ax: Axes):
     """
     Draw a projection line from the point to the equator
     """
-    vector.set_ecliptical(**point_coordinates)
+    vector.set_ecliptical(point['lon'], point['lat'])
     # Point parameters
     point_ra = vector.equatorial().ra
     point_dec = vector.equatorial().dec
@@ -139,15 +142,36 @@ def eqt_projection(vector: Vector, point_coordinates: dict, ax: Axes):
     ax.plot(*xyz_hrz(vector), color="#c4d6e7")
 
 
-def ecl_projection(vector: Vector, point_coordinates: dict, ax: Axes):
+def ecl_projection(vector: Vector, point: dict, ax: Axes):
     """
     Draw a projection line from the point to the ecliptic
     """
-    vector.set_ecliptical(**point_coordinates)
+    vector.set_ecliptical(point['lon'], point['lat'])
     # Point parameters
     point_lon = vector.ecliptical().lon
     point_lat = vector.ecliptical().lat
     lat = np.linspace(0, point_lat, 50)
     vector.set_ecliptical(point_lon, lat)
-    x, y, z = xyz_hrz(vector)
     ax.plot(*xyz_hrz(vector), color=(.5, 0, .5))
+
+
+def placidus(vector: Vector, ax: Axes):
+    """
+    Draw placidus lines on sphere
+    """
+    ramc = vector.ramc()
+    x = [[], [], [], [], [], ]
+    y = [[], [], [], [], [], ]
+    z = [[], [], [], [], [], ]
+    for dec in range(-90, 90):
+        vector.set_equatorial(0, dec)
+        dsa = vector.dsa()
+        if dsa is not None:
+            for i in range(0, 5):
+                vector.set_equatorial(ramc + (i - 2) * dsa/3, dec)
+                xx, yy, zz = xyz_hrz(vector)
+                x[i].append(xx)
+                y[i].append(yy)
+                z[i].append(zz)
+    for i in range(0, 5):
+        ax.plot(x[i], y[i], z[i], color='green')
