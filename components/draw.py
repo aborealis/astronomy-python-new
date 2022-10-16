@@ -107,7 +107,6 @@ def semiarc(vector: Vector, point: dict, ax: Axes, s_type: str):
     """
     vector.set_ecliptical(point['lon'], point['lat'])
     # Point parameters
-    point_ra = vector.equatorial().ra
     point_dec = vector.equatorial().dec
     point_dsa = vector.dsa()
     if point_dsa is None:
@@ -175,3 +174,21 @@ def placidus(vector: Vector, ax: Axes):
                 z[i].append(zz)
     for i in range(0, 5):
         ax.plot(x[i], y[i], z[i], color='green')
+
+
+def circle_2d(vector: Vector, points: list[dict], ax: Axes) -> None:
+    """
+    Draws 2d Zodiac circle
+    """
+    a = np.linspace(0, 2 * np.pi)
+    x = np.cos(a)
+    y = np.sin(a)
+    ax.plot(x, y, color=(.7, .2, .7))
+    ax.text(-0.95, -0.1, s='0', fontsize=6)
+    ax.text(-0.1, -0.9, s='90', fontsize=6)
+    for point in points:
+        vector.set_ecliptical(lon=point['lon'], lat=point['lat'])
+        xyz = vector.cartesian()
+        ax.plot([-xyz.x, 0], [-xyz.y, 0], color='red',
+                linewidth=1, linestyle='dotted')
+        ax.scatter(-xyz.x, -xyz.y, color=point['color'])

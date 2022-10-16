@@ -386,6 +386,19 @@ class Vector:
 
         return possible_asc % 360
 
+    def mc(self):
+        """
+        Returns culminating Zodiac degree
+        """
+        ramc = self.ramc()
+        y = tan(ramc * pi / 180)
+        x = self.__constants__.cos_e
+        if 90 < ramc <= 180:
+            return (atan_btw_xy(x, y) - 180) % 350
+        if 180 < ramc <= 270:
+            return (atan_btw_xy(x, y) + 180) % 350
+        return atan_btw_xy(x, y)
+
     def umd(self):
         """
         Returns upper meridian distance, UMD
@@ -463,3 +476,4 @@ if __name__ == '__main__':
     # Diurnal Semiarc (DSA) of a given vector
     print('UMD:', vector.umd())
     print('DSA:', vector.dsa())
+    print('MC:', vector.mc())
