@@ -124,6 +124,7 @@ def semiarc(vector: Vector, point_data: dict, axs: Axes, s_type: str):
     s_type is DSA or NSA for diurnal/nocturnal semiarc
     """
     vector.set_ecliptical(point_data['lon'], point_data['lat'])
+
     # Point parameters
     point_dec = vector.equatorial().dec
     point_dsa = vector.dsa()
@@ -151,6 +152,7 @@ def eqt_projection(vector: Vector, point_data: dict, axs: Axes):
     Draw a projection line from the point to the equator
     """
     vector.set_ecliptical(point_data['lon'], point_data['lat'])
+
     # Point parameters
     point_ra = vector.equatorial().ra
     point_dec = vector.equatorial().dec
@@ -164,6 +166,7 @@ def ecl_projection(vector: Vector, point_data: dict, axs: Axes):
     Draw a projection line from the point to the ecliptic
     """
     vector.set_ecliptical(point_data['lon'], point_data['lat'])
+
     # Point parameters
     point_lon = vector.ecliptical().lon
     point_lat = vector.ecliptical().lat

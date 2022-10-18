@@ -57,11 +57,12 @@ def __gst__(timeaware_utc: datetime):
     Returns greenwich sidereal apparent time
     """
     jday = __julian_day__(timeaware_utc)
+
     # 2000 January 1, 12h
     j2000 = 2451545.0
 
     if jday - floor(jday) < 0.5:
-        # from nnon to midnight
+        # from noon to midnight
         past_midnight = floor(jday) - 0.5
     else:
         # from midnight to noon

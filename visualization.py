@@ -6,10 +6,10 @@ from matplotlib.axes import Axes
 import matplotlib.pyplot as plt
 from vector import Vector
 import components.time as tm
-import components.draw as draw
+from components import draw
 
 # Set spacial data
-init_datetime = datetime(2022, 10, 10, 7, 20)
+init_datetime = datetime(2022, 10, 10, 0, 0)
 TIME_ZONE = 4
 geo = dict(
     geo_lon=44 + 46/60,
@@ -42,17 +42,36 @@ def draw_frame(minute: int, ax1: Axes, ax2: Axes) -> None:
         color="orange",
     )
 
+    cusps = [
+        dict(
+            lon=vector.placidus(num),
+            lat=0,
+            label=None,
+            color="grey",
+        ) for num in [2, 3, 4, 5, 6, 7, 8, 9, 11, 12]
+    ]
+    cusps = [
+        item for item in cusps
+        if item['lon'] is not None
+    ]
+
     # Uncomment the shapes you want to display
     draw.surface(vector, ax1)
     draw.ecliptic(vector, ax1)
     draw.point(vector, point_mc, ax1)
     draw.point(vector, point_asc, ax1)
+
+    for cusp in cusps:
+        draw.point(vector, cusp, ax1)
+
     # draw.semiarc(vector, point_asc, ax, 'UMD')
     # draw.semiarc(vector, point_asc, ax, 'DSA')
     draw.eqt_projection(vector, point_asc, ax1)
     draw.ecl_projection(vector, point_asc, ax1)
     draw.placidus(vector, ax1)
-    draw.circle_2d(vector, [point_asc, point_mc], ax2)
+    draw.circle_2d(vector, [
+        point_asc, point_mc, *cusps,
+    ], ax2)
 
     ax1.set_axis_off()
     ax2.set_axis_off()
