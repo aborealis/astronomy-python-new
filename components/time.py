@@ -1,9 +1,9 @@
 """
 Time-related functions
 """
+from datetime import datetime, timedelta, timezone
 from math import floor
 from numpy import sin, cos, pi
-from datetime import datetime, timedelta, timezone
 
 
 def __localtime__(naive_datetime: datetime,
@@ -31,14 +31,14 @@ def __julian_day__(timeaware_utc: datetime) -> float:
     """
     Returns Julian day for a given local time
     """
-    GRIGORIAN_ERA = datetime(1582, 10, 15, tzinfo=timezone.utc)
+    grigorian_era = datetime(1582, 10, 15, tzinfo=timezone.utc)
 
     # Between Julian and Grigorian calendars
     leapyears = (1582 + 4713 - 1) // 4
     nonleapyears = 1582 + 4713 - 1 - leapyears
     days_btw_cals = (
         leapyears * 366 + nonleapyears * 365
-        + (GRIGORIAN_ERA - datetime(1582, 1, 1, tzinfo=timezone.utc)).days
+        + (grigorian_era - datetime(1582, 1, 1, tzinfo=timezone.utc)).days
         # 10 days were extracted by Grigory
         # 0.5 days were added to switch from noon-to-noon to
         # midnight-to-midnight day calculation
@@ -46,7 +46,7 @@ def __julian_day__(timeaware_utc: datetime) -> float:
     )
 
     days_from_grig_era = (
-        timeaware_utc - GRIGORIAN_ERA
+        timeaware_utc - grigorian_era
     ).total_seconds() / 3600 / 24
 
     return days_btw_cals + days_from_grig_era
@@ -58,7 +58,7 @@ def __gst__(timeaware_utc: datetime):
     """
     jday = __julian_day__(timeaware_utc)
     # 2000 January 1, 12h
-    J2000 = 2451545.0
+    j2000 = 2451545.0
 
     if jday - floor(jday) < 0.5:
         # from nnon to midnight
@@ -67,11 +67,11 @@ def __gst__(timeaware_utc: datetime):
         # from midnight to noon
         past_midnight = floor(jday) + 0.5
 
-    days_since_j2000 = jday - J2000
+    days_since_j2000 = jday - j2000
     centuries_since_j2000 = days_since_j2000 / 36525
-    delta_jdays_ut = past_midnight - J2000
+    delta_jdays_ut = past_midnight - j2000
     hours_since_midnight = (jday - past_midnight) * 24
-    GMST = (6.697375
+    gmst = (6.697375
             + 0.065707485828 * delta_jdays_ut
             + 1.0027379 * hours_since_midnight
             + 0.0854103 * centuries_since_j2000
@@ -84,16 +84,16 @@ def __gst__(timeaware_utc: datetime):
     eqeq = (-0.000319 * sin(nnode_long * pi / 180)
             - 0.000024 * sin(2 * sun_mean_long / 180)) * cos(epsilon * pi / 180)
 
-    return GMST + eqeq
+    return gmst + eqeq
 
 
 def __lst__(timeaware_utc: datetime, geo_lon: float):
     """
     Returns local sidereal time, LST (in hours)
     """
-    GST = __gst__(timeaware_utc)
+    gst = __gst__(timeaware_utc)
     offset = geo_lon / 360 * 24
-    return (GST + offset) % 24
+    return (gst + offset) % 24
 
 
 def __inclination_ecliptic__(timeaware_utc: datetime) -> float:
