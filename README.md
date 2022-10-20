@@ -1,6 +1,6 @@
 # Astronomy of the celestial sphere
 
-This package calculates and visualizes astronomical phenomena on the celestial sphere, like the real ascension of MC, the oblique ascension of a given stellar point, even the cusps of the popular astrological Placidus house system, and much more.
+This package calculates and visualizes astronomical phenomena on the celestial sphere, like the right ascension of MC, the oblique ascension of a given stellar point, even the cusps of the popular astrological Placidus house system, and much more.
 
 It is a handy tool for astronomy teachers, scientists, and astrologers.
 
@@ -36,7 +36,7 @@ print(test_vector.lst)
 from datetime import timedelta
 print(timedelta(hours=test_vector.lst))
 
-# Real Ascention of Medium Coeli, RAMC
+# Right Ascention of Medium Coeli, RAMC
 print(test_vector.ramc())
 
 # Ascending Zodiac degree, ASC
@@ -174,4 +174,17 @@ draw.placidus(vector, sphere, under_horizon=False)
 draw.zodiac_2d(vector, [
     pnt['p1'], pnt['p2'], pnt['p3'],
 ], ax2)
+```
+
+### Unit converters
+
+The Vector class contains few methods to convert units. The `.dms()` converts float degree into the degrees minutes and seconds. The `.time_to_andle()` converts right ascention from time units into absolute degrees.
+
+Example:
+```python
+# Set any star by known RA expressed in time units
+aldebaran_ra = test_vector.time_to_angle(
+    hours=4, minutes=35, seconds=55
+)
+print('Aldebaran right ascention:', test_vector.dms(aldebaran_ra))
 ```

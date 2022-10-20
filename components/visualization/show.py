@@ -43,8 +43,8 @@ def draw_frame(data: dict,
     ax1.set_ylim3d(-1/zoom, 1/zoom)
     ax1.set_title(
         (f'{tm.__localtime__(naive_datetime, data["time_zone"])} '
-         + f'lon: {vector.show_degrees_minutes(data["geo_lon"])} '
-         + f'lat: {vector.show_degrees_minutes(data["geo_lat"])}')
+         + f'lon: {vector.dms(data["geo_lon"])} '
+         + f'lat: {vector.dms(data["geo_lat"])}')
     )
     ax1.set_aspect('equal')
     ax2.set_aspect('equal')

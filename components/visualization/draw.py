@@ -22,10 +22,10 @@ def surface(vector: Vector, axs: Axes):
     """
     Draw celestial surface with horizon
     """
-    real_asc = np.linspace(0, 360, 30)
+    rasc = np.linspace(0, 360, 30)
     dec = np.linspace(0, 360, 30)
-    real_asc, dec = np.meshgrid(real_asc, dec)
-    vector.set_equatorial(real_asc, dec)
+    rasc, dec = np.meshgrid(rasc, dec)
+    vector.set_equatorial(rasc, dec)
     axs.plot_wireframe(*xyz_hrz(vector), alpha=0.05)
 
     # Horizon
@@ -36,23 +36,23 @@ def surface(vector: Vector, axs: Axes):
     axs.plot(_x, _y, _z, label='Horizon')
 
     # Equator
-    real_asc = np.linspace(0, 360, 100)
-    vector.set_equatorial(real_asc, dec=0)
+    rasc = np.linspace(0, 360, 100)
+    vector.set_equatorial(rasc, dec=0)
     axs.plot(*xyz_hrz(vector), label='Equator', linewidth=0.7, color="#c4d6e7")
 
     # Edges of region of never-ascending stars
-    real_asc = np.linspace(0, 360, 100)
-    vector.set_equatorial(real_asc, dec=vector.__constants__.dec_max)
+    rasc = np.linspace(0, 360, 100)
+    vector.set_equatorial(rasc, dec=vector.__constants__.dec_max)
     axs.plot(*xyz_hrz(vector), linewidth=0.7, color="#c4d6e7")
 
-    real_asc = np.linspace(0, 360, 100)
-    vector.set_equatorial(real_asc, dec=-vector.__constants__.dec_max)
+    rasc = np.linspace(0, 360, 100)
+    vector.set_equatorial(rasc, dec=-vector.__constants__.dec_max)
     axs.plot(*xyz_hrz(vector), linewidth=0.7, color="#c4d6e7")
 
     # Equator degrees
-    for real_asc in range(0, 360, 30):
-        vector.set_equatorial(real_asc, dec=0)
-        axs.text(*xyz_hrz(vector), s=str(real_asc),
+    for rasc in range(0, 360, 30):
+        vector.set_equatorial(rasc, dec=0)
+        axs.text(*xyz_hrz(vector), s=str(rasc),
                  fontsize=6, color="cornflowerblue")
 
     # North - South Axis
@@ -78,7 +78,7 @@ def surface(vector: Vector, axs: Axes):
     _y = np.cos(alpha)
     axs.plot(_x, _y, _z, color='grey', linewidth=1,  linestyle='dashed')
 
-    vector.set_equatorial(real_asc=vector.ramc(), dec=0)
+    vector.set_equatorial(rasc=vector.ramc(), dec=0)
     axs.text(*xyz_hrz(vector), s="RAMC")
 
 
@@ -136,10 +136,10 @@ def semiarc(vector: Vector, point_data: dict, axs: Axes, s_type: str):
     # Draw DSA
     delta = point_dsa if s_type == 'DSA' else point_umd
     if eastern:
-        real_asc = np.linspace(vector.ramc(), vector.ramc() + delta, 50)
+        rasc = np.linspace(vector.ramc(), vector.ramc() + delta, 50)
     else:
-        real_asc = np.linspace(vector.ramc() - delta, vector.ramc(), 50)
-    vector.set_equatorial(real_asc, dec=point_dec)
+        rasc = np.linspace(vector.ramc() - delta, vector.ramc(), 50)
+    vector.set_equatorial(rasc, dec=point_dec)
     axs.plot(*xyz_hrz(vector),
              label=s_type,
              linewidth=0.7 if s_type == 'DSA' else 1.2,
@@ -154,7 +154,7 @@ def eqt_projection(vector: Vector, point_data: dict, axs: Axes):
     vector.set_ecliptical(point_data['lon'], point_data['lat'])
 
     # Point parameters
-    point_ra = vector.equatorial().ra
+    point_ra = vector.equatorial().rasc
     point_dec = vector.equatorial().dec
     dec = np.linspace(0, point_dec, 50)
     vector.set_equatorial(point_ra, dec)
@@ -173,6 +173,20 @@ def ecl_projection(vector: Vector, point_data: dict, axs: Axes):
     lat = np.linspace(0, point_lat, 50)
     vector.set_ecliptical(point_lon, lat)
     axs.plot(*xyz_hrz(vector), color=(.5, 0, .5))
+
+
+def placidus_schema(vector: Vector, axs: Axes) -> None:
+    """
+    Illustrates the principle behind the
+    Placidus house system
+    """
+    ramc = vector.ramc()
+    for dec in range(-90, 90):
+        dsa = vector.dsa(dec)
+        if dsa is not None:
+            rasc = np.linspace(ramc, ramc + dsa/3)
+            vector.set_equatorial(rasc, dec)
+            axs.plot(*xyz_hrz(vector), linewidth=0.7, color='lightgray')
 
 
 def placidus(vector: Vector, axs: Axes, under_horizon: bool = False):

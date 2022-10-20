@@ -2,6 +2,7 @@
 Creates vector and transfers it between
 spherical coordinate systems
 """
+from mimetypes import init
 from typing import NamedTuple, Optional, Union
 from datetime import datetime, timedelta
 from math import asin, atan, floor
@@ -36,6 +37,16 @@ def true_distance(abs_degree1: float, abs_degree2: float) -> float:
     return abs(distance)
 
 
+def degrees_to_dms(deg: float) -> str:
+    """
+    Converts float degree into degrees, minutes and seconds
+    """
+    degree = floor(deg)
+    minute = floor((deg - degree) * 60)
+    second = (deg - (degree + minute / 60)) * 3600
+    return f"{degree}º {minute}' " + f'{second:.1f}"'
+
+
 class _Constants(NamedTuple):
     """
     Grouped constants
@@ -56,28 +67,61 @@ class _Constants(NamedTuple):
     dec_max: float
 
 
-class _Equatorial(NamedTuple):
+class _Equatorial():
     """
     Vector in equatorial system
     """
-    ra: float  # Real ascension
-    dec: float  # Declination
+
+    def __init__(self,
+                 rasc: float,  # Right ascension
+                 dec: float,  # Declination
+                 ) -> None:
+        self.rasc = rasc
+        self.dec = dec
+
+    def __str__(self) -> str:
+        return (
+            f'_Equatorial(rasc={degrees_to_dms(self.rasc)}, '
+            + f'dec={degrees_to_dms(self.dec)})'
+        )
 
 
-class _Horizontal(NamedTuple):
+class _Horizontal():
     """
     Vector in horizontal system
     """
-    azm: float  # Azimuth
-    alt: float  # Altitude
+
+    def __init__(self,
+                 azm: float,  # Azimuth
+                 alt: float,  # Altitude
+                 ) -> None:
+        self.azm = azm
+        self.alt = alt
+
+    def __str__(self) -> str:
+        return (
+            f'_Horizontal(azm={degrees_to_dms(self.azm)}, '
+            + f'alt={degrees_to_dms(self.alt)})'
+        )
 
 
-class _Ecliptical(NamedTuple):
+class _Ecliptical():
     """
     Vector in ecliptical coordinate system
     """
-    lon: float  # Zodiac absolute degree
-    lat: float  # Celestial Latitude
+
+    def __init__(self,
+                 lon: float,  # Zodiac absolute degree
+                 lat: float,  # Celestial Latitude
+                 ) -> None:
+        self.lon = lon
+        self.lat = lat
+
+    def __str__(self) -> str:
+        return (
+            f'_Ecliptical(lon={degrees_to_dms(self.lon)}, '
+            + f'lat={degrees_to_dms(self.lat)})'
+        )
 
 
 class _Cartesian(NamedTuple):
@@ -118,11 +162,11 @@ class Vector:
         self.coords = None
         self.lst = tm.__lst__(localtime_utc, geo_lon)
 
-    def set_equatorial(self, real_asc: float, dec: float) -> _Equatorial:
+    def set_equatorial(self, rasc: float, dec: float) -> _Equatorial:
         """
         Sets equatorial coordinates
         """
-        self.coords = _Equatorial(real_asc, dec)
+        self.coords = _Equatorial(rasc, dec)
 
     def set_ecliptical(self, lon: float, lat: float) -> _Ecliptical:
         """
@@ -144,7 +188,7 @@ class Vector:
                       None,
                   ] = None) -> _Cartesian:
         """
-        Transforms spherical coordinates
+        Converts spherical coordinates
         into cartesian (x, y, z).
 
         Directions:
@@ -154,7 +198,7 @@ class Vector:
         """
         coords = self.coords if vector is None else vector
         if isinstance(coords, _Equatorial):
-            lon = coords.ra
+            lon = coords.rasc
             lat = coords.dec
         elif isinstance(coords, _Ecliptical):
             lon = coords.lon
@@ -192,7 +236,7 @@ class Vector:
     @staticmethod
     def __cartesian_to_spherical__(coords: _Cartesian) -> dict:
         """
-        Transforms cartesian (x, y, z) coordinates
+        Converts cartesian (x, y, z) coordinates
         into spherical angles
         """
         if coords.x == 0:
@@ -351,18 +395,18 @@ class Vector:
         """
         tan_p = self.__constants__.tan_p
         dec = self.equatorial().dec
-        real_asc = self.equatorial().ra
+        rasc = self.equatorial().rasc
         tan_d = tan(dec * pi / 180)
 
         # In case of no ascension at extreme latitudes
         if abs(tan_p * tan_d) > 1:
             return None
         ascension_diff = self.ascension_diff(dec)
-        return (real_asc - ascension_diff) % 360
+        return (rasc - ascension_diff) % 360
 
     def ramc(self):
         """
-        Real ascension of Medium Coeli for
+        Right ascension of Medium Coeli for
         given time of <self> object
         """
         return self.lst * 15
@@ -436,12 +480,12 @@ class Vector:
 
         return possible_mc % 360
 
-    def umd(self, real_asc: Optional[float] = None) -> float:
+    def umd(self, rasc: Optional[float] = None) -> float:
         """
         Returns upper meridian distance, UMD
         for <self> object or a given RA
         """
-        r_asc = self.equatorial().ra if real_asc is None else real_asc
+        r_asc = self.equatorial().rasc if rasc is None else rasc
         return true_distance(r_asc, self.ramc())
 
     def dsa(self, dec: Optional[float] = None) -> float:
@@ -455,13 +499,25 @@ class Vector:
         return (90 + asc_diff) % 360
 
     @classmethod
-    def show_degrees_minutes(cls, deg: float) -> str:
+    def dms(cls, deg: float) -> str:
         """
-        Transforms float value into degrees and minutes
+        Converts float degree into degrees, minutes and seconds
         """
-        degree = floor(deg)
-        minute = (deg - degree) * 60
-        return f"{degree}º {round(minute)}'"
+        return degrees_to_dms(deg)
+
+    @classmethod
+    def time_to_angle(cls, hours=0, minutes=0,
+                      seconds=0,  milliseconds=0,
+                      microseconds=0) -> float:
+        """
+        Converts timedelta into angle in degrees
+        """
+        delta = timedelta(
+            hours=hours, minutes=minutes,
+            seconds=seconds, milliseconds=milliseconds,
+            microseconds=microseconds
+        )
+        return delta.total_seconds() / 3600 * 15
 
     # ╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌
     # Private methods:
@@ -474,12 +530,12 @@ class Vector:
         tan_e = self.__constants__.tan_e
         return asin(tan_d / tan_e) * 180 / pi
 
-    def __zodiac_dec(self, real_asc: float) -> float:
+    def __zodiac_dec(self, rasc: float) -> float:
         """
         Returns zodiac declination from the RA
         """
         tan_e = self.__constants__.tan_e
-        sin_ra = sin(real_asc * pi / 180)
+        sin_ra = sin(rasc * pi / 180)
         return atan(sin_ra * tan_e) * 180 / pi
 
     def __regions_of_zodiac_ascension(self, eastern: bool = True) -> list[list]:
@@ -529,9 +585,9 @@ class Vector:
             xyz_eqt = self.cartesian(point)
             xyz_hrz = self.__eqt_to_hrz_cartesian__(xyz_eqt)
             if eastern and xyz_hrz.x > 0:
-                regions.append(point.ra)
+                regions.append(point.rasc)
             elif not eastern and xyz_hrz.x < 0:
-                regions.append(point.ra)
+                regions.append(point.rasc)
 
         # Order intersection by RA distance from RAMC
         regions = [start, *regions, finish]
@@ -595,13 +651,13 @@ class Vector:
         else:
             regions = self.__regions_of_zodiac_ascension(False)
 
-        def bisected(real_asc: float) -> float:
+        def bisected(rasc: float) -> float:
             """
             A function for bisection method
             """
-            dec = self.__zodiac_dec(real_asc)
+            dec = self.__zodiac_dec(rasc)
             dsa = self.dsa(dec)
-            umd = self.umd(real_asc)
+            umd = self.umd(rasc)
             return umd - dsa * alpha
 
         for region in regions:
@@ -634,9 +690,9 @@ class Vector:
                 abs(ra_max - edges[1]) < 1e-10 or
                 abs(ra_min - edges[0]) < 1e-10
             ):
-                # Transform RA and Dec into lon and lat
+                # Converts RA and Dec into lon and lat
                 xyz_eqt = self.cartesian(_Equatorial(
-                    ra=ra_center,
+                    rasc=ra_center,
                     dec=self.__zodiac_dec(ra_center)))
                 xyz_ecl = self.__eqt_to_ecl_cartesian__(xyz_eqt)
                 return self.__cartesian_to_spherical__(xyz_ecl)['horz_angle']
@@ -653,11 +709,11 @@ if __name__ == '__main__':
         datetime(2022, 10, 10, 4, 20),
         time_zone=4,
         geo_lon=44 + 46/60,
-        geo_lat=66 + 43/50,
+        geo_lat=66 + 43/60,
     )
 
     # Get celestial information
-    # Local Sidereal Time and real ascension of MC
+    # Local Sidereal Time and right ascension of MC
     print('LST:', timedelta(hours=test_vector.lst))
     print('RAMC:', test_vector.ramc())
 
@@ -683,7 +739,7 @@ if __name__ == '__main__':
     print('ASC:', test_vector.horizontal())
     print('ASC:', test_vector.equatorial())
 
-    # The same as real ascension of True East above
+    # The same as right ascension of True East above
     print('Oblique ascension of ASC:', test_vector.oblique_asc())
 
     # Uppper Meridian Distance (UMD) and
@@ -700,3 +756,9 @@ if __name__ == '__main__':
     if cuspid is not None:
         print('UMD:', test_vector.umd())
         print('DSA/3:', test_vector.dsa()/3)
+
+    # Set any star by known RA expressed in time units
+    aldebaran_ra = test_vector.time_to_angle(
+        hours=4, minutes=35, seconds=55
+    )
+    print('Aldebaran right ascention:', test_vector.dms(aldebaran_ra))
