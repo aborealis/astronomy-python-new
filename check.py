@@ -3,9 +3,8 @@ Compare results with swiss ephemeris module
 """
 
 from datetime import datetime, timedelta
-from email.utils import localtime
-import components.time as tm
 import swisseph as swe
+import components.vector.time as tm
 from vector import Vector
 
 
@@ -45,16 +44,16 @@ if __name__ == '__main__':
                              time_zone=4,)
     ltime_utc = tm.__localtime_utc__(ltime)
 
-    jday = julian_day(ltime_utc)
-    print('Julian day swe:', jday)
+    jul_day = julian_day(ltime_utc)
+    print('Julian day swe:', jul_day)
     print('Julian day own:', tm.__julian_day__(ltime))
     print('Julian day own:', tm.__julian_day__(ltime_utc))
 
-    print('GST swe:', timedelta(hours=swe.sidtime(jday)))
+    print('GST swe:', timedelta(hours=swe.sidtime(jul_day)))
     print('GST own:', timedelta(hours=tm.__gst__(ltime_utc)))
 
     swe_asc = get_asc(
-        jday, **geo)
+        jul_day, **geo)
     vector = Vector(
         naive_datetime=dt,
         time_zone=4,

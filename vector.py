@@ -6,7 +6,7 @@ from typing import NamedTuple, Optional, Union
 from datetime import datetime, timedelta
 from math import asin, atan, floor
 from numpy import cos, sin, pi, tan
-from components import time as tm
+from components.vector import time as tm
 
 
 def atan_btw_xy(_x: float, _y: float) -> float:

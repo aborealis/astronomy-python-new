@@ -175,7 +175,7 @@ def ecl_projection(vector: Vector, point_data: dict, axs: Axes):
     axs.plot(*xyz_hrz(vector), color=(.5, 0, .5))
 
 
-def placidus(vector: Vector, axs: Axes):
+def placidus(vector: Vector, axs: Axes, under_horizon: bool = False):
     """
     Draw placidus lines on sphere
     """
@@ -188,16 +188,20 @@ def placidus(vector: Vector, axs: Axes):
         dsa = vector.dsa()
         if dsa is not None:
             for i in range(0, 5):
-                vector.set_equatorial(ramc + (i - 2) * dsa/3, dec)
+                if under_horizon:
+                    vector.set_equatorial(ramc + 180 + (i - 2) * dsa/3, -dec)
+                else:
+                    vector.set_equatorial(ramc + (i - 2) * dsa/3, dec)
                 _xx, _yy, _zz = xyz_hrz(vector)
                 _x[i].append(_xx)
                 _y[i].append(_yy)
                 _z[i].append(_zz)
+
     for i in range(0, 5):
         axs.plot(_x[i], _y[i], _z[i], linewidth=0.7, color='green')
 
 
-def circle_2d(vector: Vector, points: list[dict], axs: Axes) -> None:
+def zodiac_2d(vector: Vector, points: list[dict], axs: Axes) -> None:
     """
     Draws 2d Zodiac circle
     """

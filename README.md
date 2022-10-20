@@ -103,64 +103,75 @@ test_vector.ascension_diff(dec=10.2)
 
 See the sample [https://youtu.be/mKVUZVK_6NM](https://youtu.be/mKVUZVK_6NM)
 
-You can use `matplotlib` or any other library to visualize these values. I have created a short module `visualization.py`. To use it:
-
 ### Set initial data
 
-Set spacial data and choose if you want an animation or a static 3d-figure
+Set spacial data and choose if you want an animation or a static 3d-figure. In `visualization.py` set the dictionary
 
 ```python
 # Set spacial data
-init_datetime = datetime(2022, 10, 10, 0, 0)
-TIME_ZONE = 4
-geo = dict(
+DATA = dict(
+    init_datetime=datetime(2022, 10, 10, 0, 0),
+    time_zone=4,
     geo_lon=44 + 46/60,
     geo_lat=76 + 43/50,
+    # Set the mode for the output figure
+    animate=True
 )
-
-# Set mode for the output figure
-ANIMATE = True
 ```
 
-### Add celestial points
+### Choose what to include into the picture
 
-Within `draw_frame()` function add as many points as you wish **in ecliptical coordinates**, like
+Template is a short file which lists the elements to be included into the picture.
+
+You can import one of the pre-defined templates from `visualization/custom_templates` directory or create your own template, and load it:
+
 ```python
-point_asc = dict(
-    lon=vector.asc(),
-    lat=0,
-    label="ASC",
+# Include predefined template
+from components.visualization.templates.placidus import figures
+# Or include your own
+from components.visualization.templates.my template import figures
+```
+
+### Create your own template
+
+To create your own template, copy one of predefined templates and modify it.
+
+First, modify the `points()` function to include your own points (planets, stars, galaxies) into the picture. All points are set in ecliptical coordinates:
+
+```python
+my_custom_point1 = dict(
+    lon=22, # Ecliptical longitude
+    lat=10, # Ecliptical latitude
+    label="ASC", # Can be None
     color="red",
 )
+
+return dict(p1=my_custom_point1)
 ```
 
-### Draw/hide element
-
-There are several valuable functions to draw elements in 3d-axes (referred to as `ax1`) and in 2d-axes (a projection of a zodiac circle, referred to as `ax2`)
+Second, modify the `figures()` function to include elements you want to show on sidereal sphere or Zodiac circle. You can use one of the following fumctions:
 
 ```python
 
-# Draw the surface of the sphere in 3d-axes
-draw.surface(vector, ax1)
+# Draw the surface of the sphere on sphere
+draw.surface(vector, sphere)
 
-# Draw ecliptic plane in 3d-axes
-draw.ecliptic(vector, ax1)
+# Draw ecliptic plane on sphere
+draw.ecliptic(vector, sphere)
 
-# Draw a chosen point in 3d-axes
-draw.point(vector, point_asc, ax1)
+# Draw a chosen point on sphere
+draw.point(vector, pnt['p1'], sphere)
 
 # Draw projection of a chosen point to
 # ecliptic and equator
-draw.eqt_projection(vector, point_asc, ax1)
-draw.ecl_projection(vector, point_asc, ax1)
+draw.eqt_projection(vector, pnt['p1'], sphere)
+draw.ecl_projection(vector, pnt['p1'], sphere)
 
 # Draw Placidus dome curves
-draw.placidus(vector, ax1)
+draw.placidus(vector, sphere, under_horizon=False)
 
-# Represent the points in 2d-axes
-draw.circle_2d(vector, [
-    point_asc, point2, point3,
+# Draw points on Zodiac circle on the top-right corner
+draw.zodiac_2d(vector, [
+    pnt['p1'], pnt['p2'], pnt['p3'],
 ], ax2)
 ```
-
-Change the list of called functions within the `draw_frame()` to set up the visualization of your choice.
