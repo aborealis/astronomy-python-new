@@ -4,6 +4,7 @@ Functions for matplotlib visualisation
 import numpy as np
 from matplotlib.axes import Axes
 from vector import Vector
+from primary_directions import Directions
 
 
 def xyz_hrz(vector: Vector) -> list:
@@ -102,15 +103,16 @@ def ecliptic(vector: Vector, axs: Axes):
              fontsize=8, color=(.5, 0, .5))
 
 
-def point(vector: Vector, point_data: dict, axs: Axes):
+def point(vector: Vector, point_data: dict, axs: Axes, line: bool = True):
     """
     Draw chosen point
     """
     # Draw pont
     vector.set_ecliptical(point_data['lon'], point_data['lat'])
     _x, _y, _z = xyz_hrz(vector)
-    axs.plot([_x, 0], [_y, 0], [_z, 0], color='red',
-             linewidth=1, linestyle='dotted')
+    if line:
+        axs.plot([_x, 0], [_y, 0], [_z, 0], color='red',
+                 linewidth=1, linestyle='dotted')
     axs.scatter(
         _x, _y, _z,
         color=point_data['color'],
@@ -231,3 +233,110 @@ def zodiac_2d(vector: Vector, points: list[dict], axs: Axes) -> None:
         axs.plot([-xyz.x, 0], [-xyz.y, 0], color='red',
                  linewidth=1, linestyle='dotted')
         axs.scatter(-xyz.x, -xyz.y, color=_p['color'])
+
+
+def direction_arc(vector: Vector,
+                  promissor_data: dict,
+                  acceptor_data: dict,
+                  axs: Axes) -> None:
+    """
+    Draws directional arc between two points,
+    acceptor's mundane position, and meridian
+    distance portions (MDP) of the acceptor.
+    """
+    # Set promissor and significator
+    directions = Directions(vector)
+    vector.set_ecliptical(promissor_data['lon'], promissor_data['lat'])
+    directions.promissor = vector.equatorial()
+    vector.set_ecliptical(acceptor_data['lon'], acceptor_data['lat'])
+    directions.acceptor = vector.equatorial()
+
+    # Draw acceptor and promissor points
+    point(vector, promissor_data, axs, line=False)
+    point(vector, acceptor_data, axs)
+
+    # Find mundane position(s) of the acceptor
+    # for the given aspect
+    mundane_positions = directions.mundane_positions_placidus()
+    if not mundane_positions:
+        return None
+    mundane_positions = [
+        item['rasc'] for item in mundane_positions
+        if item['aspect'] == 0
+    ]
+
+    # Draw acceptor's mundane position
+    # for _m in mundane_positions:
+    #     vector.set_equatorial(_m, 0)
+    #     _x, _y, _z = xyz_hrz(vector)
+    #     axs.plot([_x, 0], [_y, 0], [_z, 0], color='red',
+    #              linewidth=1, linestyle='dotted')
+    #     axs.scatter(
+    #         _x, _y, _z,
+    #         color="grey",
+    #         label=None
+    #     )
+
+    # Get directional arc(s)
+    arcs = [
+        item['dist'] for item in directions.direction_placidus()
+        if item['aspect'] == 0
+    ]
+
+    # Draw directional arc(s)
+    for arc in arcs:
+        # Draw end point of directional arc
+        vector.set_equatorial(
+            directions.promissor.rasc - arc,
+            directions.promissor.dec
+        )
+        _x, _y, _z = xyz_hrz(vector)
+        axs.plot([_x, 0], [_y, 0], [_z, 0], color='red',
+                 linewidth=1, linestyle='dotted')
+        axs.scatter(
+            _x, _y, _z,
+            color="grey",
+            label=None
+        )
+
+        # Draw the arc itself
+        rasc = np.linspace(
+            directions.promissor.rasc,
+            directions.promissor.rasc - arc
+        )
+        vector.set_equatorial(rasc, directions.promissor.dec)
+        axs.plot(*xyz_hrz(vector),
+                 label='direction',
+                 linewidth=1.2,
+                 color="red")
+
+    # Draw MDPs
+    acceptor_quadrant = directions.quadrant(
+        directions.acceptor.rasc,
+        directions.acceptor.dec,
+    )
+    acceptor_mdp = directions.md_portion(
+        directions.acceptor.rasc,
+        directions.acceptor.dec,
+    )
+    if acceptor_quadrant == 0:
+        start_point = vector.ramc()
+        ratio = acceptor_mdp
+    elif acceptor_quadrant == 1:
+        start_point = vector.ramc() + 180
+        ratio = -1 * acceptor_mdp
+    elif acceptor_quadrant == 2:
+        start_point = vector.ramc() + 180
+        ratio = acceptor_mdp
+    else:
+        start_point = vector.ramc()
+        ratio = -1 * acceptor_mdp
+
+    for dec in range(-90, 90):
+        dsa = vector.dsa(dec)
+        if dsa is None:
+            continue
+        path = dsa if acceptor_quadrant in [0, 3] else 180 - dsa
+        rasc = np.linspace(start_point, start_point + path * ratio)
+        vector.set_equatorial(rasc, dec)
+        axs.plot(*xyz_hrz(vector), linewidth=0.7, color='lightgray')

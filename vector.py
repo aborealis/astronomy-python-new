@@ -2,12 +2,12 @@
 Creates vector and transfers it between
 spherical coordinate systems
 """
-from mimetypes import init
-from typing import NamedTuple, Optional, Union
+from typing import Optional, Union
 from datetime import datetime, timedelta
-from math import asin, atan, floor
+from math import asin, atan
 from numpy import cos, sin, pi, tan
 from components.vector import time as tm
+from components.vector import coords as crd
 
 
 def atan_btw_xy(_x: float, _y: float) -> float:
@@ -37,102 +37,6 @@ def true_distance(abs_degree1: float, abs_degree2: float) -> float:
     return abs(distance)
 
 
-def degrees_to_dms(deg: float) -> str:
-    """
-    Converts float degree into degrees, minutes and seconds
-    """
-    degree = floor(deg)
-    minute = floor((deg - degree) * 60)
-    second = (deg - (degree + minute / 60)) * 3600
-    return f"{degree}º {minute}' " + f'{second:.1f}"'
-
-
-class _Constants(NamedTuple):
-    """
-    Grouped constants
-    """
-    # Epsilon - angle of ecliptic inclanation
-    epsilon: float
-    cos_e: float
-    sin_e: float
-    tan_e: float
-
-    # Phi - observer's geo latitude
-    cos_p: float
-    sin_p: float
-    tan_p: float
-
-    # Max allowable declination for Zodiac
-    # degree to be ascendible at extreme latitudes
-    dec_max: float
-
-
-class _Equatorial():
-    """
-    Vector in equatorial system
-    """
-
-    def __init__(self,
-                 rasc: float,  # Right ascension
-                 dec: float,  # Declination
-                 ) -> None:
-        self.rasc = rasc
-        self.dec = dec
-
-    def __str__(self) -> str:
-        return (
-            f'_Equatorial(rasc={degrees_to_dms(self.rasc)}, '
-            + f'dec={degrees_to_dms(self.dec)})'
-        )
-
-
-class _Horizontal():
-    """
-    Vector in horizontal system
-    """
-
-    def __init__(self,
-                 azm: float,  # Azimuth
-                 alt: float,  # Altitude
-                 ) -> None:
-        self.azm = azm
-        self.alt = alt
-
-    def __str__(self) -> str:
-        return (
-            f'_Horizontal(azm={degrees_to_dms(self.azm)}, '
-            + f'alt={degrees_to_dms(self.alt)})'
-        )
-
-
-class _Ecliptical():
-    """
-    Vector in ecliptical coordinate system
-    """
-
-    def __init__(self,
-                 lon: float,  # Zodiac absolute degree
-                 lat: float,  # Celestial Latitude
-                 ) -> None:
-        self.lon = lon
-        self.lat = lat
-
-    def __str__(self) -> str:
-        return (
-            f'_Ecliptical(lon={degrees_to_dms(self.lon)}, '
-            + f'lat={degrees_to_dms(self.lat)})'
-        )
-
-
-class _Cartesian(NamedTuple):
-    """
-    Cartesian coordinates.
-    """
-    x: float
-    y: float
-    z: float
-
-
 class Vector:
     """
     Requires local time and geo-position
@@ -148,7 +52,7 @@ class Vector:
         localtime_utc = tm.__localtime_utc__(localtime)
         epsilon = tm.__inclination_ecliptic__(localtime_utc)
 
-        self.__constants__ = _Constants(
+        self.__constants__ = crd.Constants(
             cos_e=cos(epsilon * pi / 180),
             sin_e=sin(epsilon * pi / 180),
             tan_e=tan(epsilon * pi / 180),
@@ -162,31 +66,31 @@ class Vector:
         self.coords = None
         self.lst = tm.__lst__(localtime_utc, geo_lon)
 
-    def set_equatorial(self, rasc: float, dec: float) -> _Equatorial:
+    def set_equatorial(self, rasc: float, dec: float) -> crd.Equatorial:
         """
         Sets equatorial coordinates
         """
-        self.coords = _Equatorial(rasc, dec)
+        self.coords = crd.Equatorial(rasc, dec)
 
-    def set_ecliptical(self, lon: float, lat: float) -> _Ecliptical:
+    def set_ecliptical(self, lon: float, lat: float) -> crd.Ecliptical:
         """
         Sets equatorial coordinates
         """
-        self.coords = _Ecliptical(lon, lat)
+        self.coords = crd.Ecliptical(lon, lat)
 
-    def set_horizontal(self, azm: float, alt: float) -> _Horizontal:
+    def set_horizontal(self, azm: float, alt: float) -> crd.Horizontal:
         """
         Sets horizontal coordinates
         """
-        self.coords = _Horizontal(azm, alt)
+        self.coords = crd.Horizontal(azm, alt)
 
     def cartesian(self,
                   vector: Union[
-                      _Ecliptical,
-                      _Equatorial,
-                      _Horizontal,
+                      crd.Ecliptical,
+                      crd.Equatorial,
+                      crd.Horizontal,
                       None,
-                  ] = None) -> _Cartesian:
+                  ] = None) -> crd.Cartesian:
         """
         Converts spherical coordinates
         into cartesian (x, y, z).
@@ -197,10 +101,10 @@ class Vector:
         - Horizontal(azm=0, alt=0) -> (0, 1, 0)
         """
         coords = self.coords if vector is None else vector
-        if isinstance(coords, _Equatorial):
+        if isinstance(coords, crd.Equatorial):
             lon = coords.rasc
             lat = coords.dec
-        elif isinstance(coords, _Ecliptical):
+        elif isinstance(coords, crd.Ecliptical):
             lon = coords.lon
             lat = coords.lat
         else:
@@ -212,7 +116,7 @@ class Vector:
         cos_lon = cos(lon / 180 * pi)
         sin_lon = sin(lon / 180 * pi)
 
-        return _Cartesian(
+        return crd.Cartesian(
             x=cos_lat * cos_lon,
             y=cos_lat * sin_lon,
             z=sin_lat,
@@ -226,15 +130,15 @@ class Vector:
         """
         cartesian = self.cartesian()
         coords = self.coords
-        if isinstance(coords, _Equatorial):
+        if isinstance(coords, crd.Equatorial):
             return self.__eqt_to_hrz_cartesian__(cartesian)
-        if isinstance(coords, _Ecliptical):
+        if isinstance(coords, crd.Ecliptical):
             xyz_eqt = self.__ecl_to_eqt_cartesian__(cartesian)
             return self.__eqt_to_hrz_cartesian__(xyz_eqt)
         return cartesian
 
     @staticmethod
-    def __cartesian_to_spherical__(coords: _Cartesian) -> dict:
+    def __cartesian_to_spherical__(coords: crd.Cartesian) -> dict:
         """
         Converts cartesian (x, y, z) coordinates
         into spherical angles
@@ -247,7 +151,7 @@ class Vector:
 
         return dict(horz_angle=lon, vert_angle=lat)
 
-    def __ecl_to_eqt_cartesian__(self, ecl: _Cartesian) -> _Cartesian:
+    def __ecl_to_eqt_cartesian__(self, ecl: crd.Cartesian) -> crd.Cartesian:
         """
         Transfers cartesian (x, y, z) from
         ecliptical to equatorial system
@@ -259,9 +163,9 @@ class Vector:
         y_eqt = cos_e * ecl.y - sin_e * ecl.z
         z_eqt = sin_e * ecl.y + cos_e * ecl.z
 
-        return _Cartesian(x_eqt, y_eqt, z_eqt)
+        return crd.Cartesian(x_eqt, y_eqt, z_eqt)
 
-    def __eqt_to_ecl_cartesian__(self, eqt: _Cartesian) -> _Cartesian:
+    def __eqt_to_ecl_cartesian__(self, eqt: crd.Cartesian) -> crd.Cartesian:
         """
         Transfers cartesian (x, y, z) from
         equatorial to ecliptical system
@@ -273,9 +177,9 @@ class Vector:
         y_ecl = cos_e * eqt.y + sin_e * eqt.z
         z_ecl = - sin_e * eqt.y + cos_e * eqt.z
 
-        return _Cartesian(x_ecl, y_ecl, z_ecl)
+        return crd.Cartesian(x_ecl, y_ecl, z_ecl)
 
-    def __eqt_to_hrz_cartesian__(self, eqt: _Cartesian) -> _Cartesian:
+    def __eqt_to_hrz_cartesian__(self, eqt: crd.Cartesian) -> crd.Cartesian:
         """
         Transfers cartesian (x, y, z) from
         equatorial to horizontal system
@@ -296,9 +200,9 @@ class Vector:
         y_hrz = sin_p * y_eqt_rot + cos_p * z_eqt_rot
         z_hrz = - cos_p * y_eqt_rot + sin_p * z_eqt_rot
 
-        return _Cartesian(x_hrz, y_hrz, z_hrz)
+        return crd.Cartesian(x_hrz, y_hrz, z_hrz)
 
-    def __htz_to_eqt_cartesian__(self, hrz: _Cartesian) -> _Cartesian:
+    def __htz_to_eqt_cartesian__(self, hrz: crd.Cartesian) -> crd.Cartesian:
         """
         Transfers cartesian (x, y, z) from
         horizontal to equatorial system
@@ -319,60 +223,60 @@ class Vector:
         y_eqt = sin_t * x_eqt_rot + cos_t * y_eqt_rot
         z_eqt = z_eqt_rot
 
-        return _Cartesian(x_eqt, y_eqt, z_eqt)
+        return crd.Cartesian(x_eqt, y_eqt, z_eqt)
 
-    def equatorial(self) -> _Equatorial:
+    def equatorial(self) -> crd.Equatorial:
         """
-        Transfers current vector to equatorial
-        coordinate system
+        Transfers current vector (or any other
+        given vector) to equatorial coordinate system
         """
         xyz = self.cartesian()
-        if isinstance(self.coords, _Ecliptical):
+        if isinstance(self.coords, crd.Ecliptical):
             xyz_eqt = self.__ecl_to_eqt_cartesian__(xyz)
-        elif isinstance(self.coords, _Horizontal):
+        elif isinstance(self.coords, crd.Horizontal):
             xyz_eqt = self.__htz_to_eqt_cartesian__(xyz)
         else:
             xyz_eqt = xyz
 
         spherical = self.__cartesian_to_spherical__(xyz_eqt)
-        return _Equatorial(spherical['horz_angle'],
-                           spherical['vert_angle'])
+        return crd.Equatorial(spherical['horz_angle'],
+                              spherical['vert_angle'])
 
-    def horizontal(self) -> _Horizontal:
+    def horizontal(self) -> crd.Horizontal:
         """
         Transfers current vector to horizontal
         coordinate system
         """
         xyz = self.cartesian()
-        if isinstance(self.coords, _Ecliptical):
+        if isinstance(self.coords, crd.Ecliptical):
             xyz_eqt = self.__ecl_to_eqt_cartesian__(xyz)
             xyz_hrz = self.__eqt_to_hrz_cartesian__(xyz_eqt)
-        elif isinstance(self.coords, _Equatorial):
+        elif isinstance(self.coords, crd.Equatorial):
             xyz_hrz = self.__eqt_to_hrz_cartesian__(xyz)
         else:
             xyz_hrz = xyz
 
         spherical = self.__cartesian_to_spherical__(xyz_hrz)
-        return _Horizontal(90 - spherical['horz_angle'],
-                           spherical['vert_angle'])
+        return crd.Horizontal(90 - spherical['horz_angle'],
+                              spherical['vert_angle'])
 
-    def ecliptical(self) -> _Ecliptical:
+    def ecliptical(self) -> crd.Ecliptical:
         """
         Transfers current vector to ecliptical
         coordinate system
         """
         xyz = self.cartesian()
-        if isinstance(self.coords, _Equatorial):
+        if isinstance(self.coords, crd.Equatorial):
             xyz_ecl = self.__eqt_to_ecl_cartesian__(xyz)
-        elif isinstance(self.coords, _Horizontal):
+        elif isinstance(self.coords, crd.Horizontal):
             xyz_eqt = self.__htz_to_eqt_cartesian__(xyz)
             xyz_ecl = self.__eqt_to_ecl_cartesian__(xyz_eqt)
         else:
             xyz_ecl = xyz
 
         spherical = self.__cartesian_to_spherical__(xyz_ecl)
-        return _Ecliptical(spherical['horz_angle'],
-                           spherical['vert_angle'])
+        return crd.Ecliptical(spherical['horz_angle'],
+                              spherical['vert_angle'])
 
     def ascension_diff(self, dec: Optional[float] = None) -> float:
         """
@@ -430,7 +334,7 @@ class Vector:
         _x = tan_p
         dec_asc = atan_btw_xy(_x, _y)
 
-        xyz_eqt = self.cartesian(_Equatorial(ra_asc, dec_asc))
+        xyz_eqt = self.cartesian(crd.Equatorial(ra_asc, dec_asc))
         xyz_ecl = self.__eqt_to_ecl_cartesian__(xyz_eqt)
         possible_asc = self.__cartesian_to_spherical__(xyz_ecl)['horz_angle']
 
@@ -472,7 +376,7 @@ class Vector:
         # travels through the TrueSouth/
         # North at extreme latitudes)
         # ╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌
-        xyz_ecl = self.cartesian(_Ecliptical(possible_mc, 0))
+        xyz_ecl = self.cartesian(crd.Ecliptical(possible_mc, 0))
         xyz_eqt = self.__ecl_to_eqt_cartesian__(xyz_ecl)
         xyz_hrz = self.__eqt_to_hrz_cartesian__(xyz_eqt)
         if xyz_hrz.z < 0:
@@ -503,7 +407,7 @@ class Vector:
         """
         Converts float degree into degrees, minutes and seconds
         """
-        return degrees_to_dms(deg)
+        return crd.degrees_to_dms(deg)
 
     @classmethod
     def time_to_angle(cls, hours=0, minutes=0,
@@ -575,7 +479,7 @@ class Vector:
             point0, 180 + point0, 180 - point0, 360 - point0,
         ]
         intersections = [
-            _Equatorial(_ra, self.__zodiac_dec(_ra))
+            crd.Equatorial(_ra, self.__zodiac_dec(_ra))
             for _ra in intersections
         ]
 
@@ -691,7 +595,7 @@ class Vector:
                 abs(ra_min - edges[0]) < 1e-10
             ):
                 # Converts RA and Dec into lon and lat
-                xyz_eqt = self.cartesian(_Equatorial(
+                xyz_eqt = self.cartesian(crd.Equatorial(
                     rasc=ra_center,
                     dec=self.__zodiac_dec(ra_center)))
                 xyz_ecl = self.__eqt_to_ecl_cartesian__(xyz_eqt)
@@ -732,7 +636,7 @@ if __name__ == '__main__':
     print('True East oblique ascension:', test_vector.oblique_asc())
 
     # Observe cartasian coordinates in any system
-    print(test_vector.cartesian(test_vector.ecliptical()))
+    print(test_vector.cartesian(test_vector.horizontal()))
 
     # Let's check ascendant
     test_vector.set_ecliptical(lon=test_vector.asc(), lat=0.0)
@@ -761,4 +665,4 @@ if __name__ == '__main__':
     aldebaran_ra = test_vector.time_to_angle(
         hours=4, minutes=35, seconds=55
     )
-    print('Aldebaran right ascention:', test_vector.dms(aldebaran_ra))
+    print('Aldebaran right ascension:', test_vector.dms(aldebaran_ra))
