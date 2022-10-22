@@ -14,7 +14,7 @@ def points(vector: Vector) -> dict[dict]:
     """
 
     acceptor = dict(
-        lon=80,
+        lon=140,
         lat=0,
         label='Acceptor',
         color="blue",
@@ -52,5 +52,11 @@ def figures(vector: Vector, sphere: Axes, zodiac: Axes) -> None:
     pnt = points(vector)
     draw.surface(vector, sphere)
     draw.ecliptic(vector, sphere)
-    draw.direction_arc(vector, pnt['promissor'], pnt['acceptor'], sphere)
+    draw.mundane_positions_placidus(vector, pnt['acceptor'], sphere)
+    draw.meridian_distance_portions(vector, pnt['acceptor'], sphere)
+    draw.direction_arc(
+        vector,
+        pnt['promissor'],
+        pnt['acceptor'],
+        60, sphere, zodiac)
     draw.point(vector, pnt['mc'], sphere, line=False)

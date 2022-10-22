@@ -111,7 +111,7 @@ class Directions:
         as the acceptorm plus all major aspects to
         this point on the equatorial plane.
         """
-        if None in [self.__promissor, self.__acceptor]:
+        if self.__acceptor is None:
             return None
 
         acceptor_rasc = self.__acceptor.rasc
@@ -150,11 +150,13 @@ class Directions:
         for item in mundane_positions:
             eqt_quadrant = self.quadrant(item['rasc'], dec=0)
             eqt_mdp = self.md_portion(item['rasc'], dec=0)
-            rasc = self.__ra_conj_placidus(
+            aspect_rasc = self.__ra_conj_placidus(
                 eqt_mdp, eqt_quadrant, promissor_dec
             )
-            distance = true_distance(rasc, promissor_rasc)
-            check = true_distance(rasc, promissor_rasc - distance)
+            distance = true_distance(aspect_rasc, promissor_rasc)
+            check = true_distance(aspect_rasc, promissor_rasc - distance)
+
+            # Negative distances for converse direction
             directions.append(dict(
                 dist=distance if abs(check) < 1e-10 else -distance,
                 aspect=item['aspect']

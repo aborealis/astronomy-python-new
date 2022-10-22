@@ -235,90 +235,74 @@ def zodiac_2d(vector: Vector, points: list[dict], axs: Axes) -> None:
         axs.scatter(-xyz.x, -xyz.y, color=_p['color'])
 
 
-def direction_arc(vector: Vector,
-                  promissor_data: dict,
-                  acceptor_data: dict,
-                  axs: Axes) -> None:
+# ╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌
+# Primary direction related
+# functions:
+# ╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌
+
+def mundane_positions_placidus(vector: Vector,
+                               acceptor_data: dict,
+                               axs: Axes) -> None:
     """
-    Draws directional arc between two points,
-    acceptor's mundane position, and meridian
-    distance portions (MDP) of the acceptor.
+    Draws mundane positions of the acceptor
     """
-    # Set promissor and significator
+    # Set acceptor
     directions = Directions(vector)
-    vector.set_ecliptical(promissor_data['lon'], promissor_data['lat'])
-    directions.promissor = vector.equatorial()
     vector.set_ecliptical(acceptor_data['lon'], acceptor_data['lat'])
     directions.acceptor = vector.equatorial()
 
-    # Draw acceptor and promissor points
-    point(vector, promissor_data, axs, line=False)
+    # Draw acceptor point
     point(vector, acceptor_data, axs)
 
-    # Find mundane position(s) of the acceptor
-    # for the given aspect
+    # Find mundane positions of the acceptor
     mundane_positions = directions.mundane_positions_placidus()
     if not mundane_positions:
         return None
-    mundane_positions = [
+    conjunction = [
         item['rasc'] for item in mundane_positions
         if item['aspect'] == 0
+    ][0]
+    mundane_positions = [
+        item['rasc'] for item in mundane_positions
     ]
 
     # Draw acceptor's mundane position
-    # for _m in mundane_positions:
-    #     vector.set_equatorial(_m, 0)
-    #     _x, _y, _z = xyz_hrz(vector)
-    #     axs.plot([_x, 0], [_y, 0], [_z, 0], color='red',
-    #              linewidth=1, linestyle='dotted')
-    #     axs.scatter(
-    #         _x, _y, _z,
-    #         color="grey",
-    #         label=None
-    #     )
+    vector.set_equatorial(conjunction, 0)
+    _x0, _y0, _z0 = xyz_hrz(vector)
 
-    # Get directional arc(s)
-    arcs = [
-        item['dist'] for item in directions.direction_placidus()
-        if item['aspect'] == 0
-    ]
-
-    # Draw directional arc(s)
-    for arc in arcs:
-        # Draw end point of directional arc
-        vector.set_equatorial(
-            directions.promissor.rasc - arc,
-            directions.promissor.dec
-        )
+    for _m in mundane_positions:
+        vector.set_equatorial(_m, 0)
         _x, _y, _z = xyz_hrz(vector)
-        axs.plot([_x, 0], [_y, 0], [_z, 0], color='red',
-                 linewidth=1, linestyle='dotted')
+        axs.plot([_x, _x0], [_y, _y0], [_z, _z0], color="#c4d6e7",
+                 linewidth=1.5, linestyle='solid')
         axs.scatter(
             _x, _y, _z,
-            color="grey",
+            color="#c4d6e7",
             label=None
         )
+    return None
 
-        # Draw the arc itself
-        rasc = np.linspace(
-            directions.promissor.rasc,
-            directions.promissor.rasc - arc
-        )
-        vector.set_equatorial(rasc, directions.promissor.dec)
-        axs.plot(*xyz_hrz(vector),
-                 label='direction',
-                 linewidth=1.2,
-                 color="red")
+
+def meridian_distance_portions(vector: Vector,
+                               acceptor_data: dict,
+                               axs: Axes) -> None:
+    """
+    Draws meridian distance portions
+    of the acceptor
+    """
+    # Set acceptor
+    directions = Directions(vector)
+    vector.set_ecliptical(acceptor_data['lon'], acceptor_data['lat'])
+    directions.acceptor = vector.equatorial()
+    acc_rasc = directions.acceptor.rasc
+    acc_dec = directions.acceptor.dec
 
     # Draw MDPs
-    acceptor_quadrant = directions.quadrant(
-        directions.acceptor.rasc,
-        directions.acceptor.dec,
-    )
-    acceptor_mdp = directions.md_portion(
-        directions.acceptor.rasc,
-        directions.acceptor.dec,
-    )
+    acceptor_quadrant = directions.quadrant(acc_rasc, acc_dec)
+    acceptor_mdp = directions.md_portion(acc_rasc, acc_dec)
+    if acceptor_mdp is None:
+        return None
+
     if acceptor_quadrant == 0:
         start_point = vector.ramc()
         ratio = acceptor_mdp
@@ -340,3 +324,73 @@ def direction_arc(vector: Vector,
         rasc = np.linspace(start_point, start_point + path * ratio)
         vector.set_equatorial(rasc, dec)
         axs.plot(*xyz_hrz(vector), linewidth=0.7, color='lightgray')
+    return None
+
+
+def direction_arc(vector: Vector,
+                  promissor_data: dict,
+                  acceptor_data: dict,
+                  aspect: int,
+                  axs: Axes,
+                  axs2: Axes) -> None:
+    """
+    Draws directional arc between promissor
+    and acceptor's aspect
+    """
+    # Set promissor and significator
+    directions = Directions(vector)
+    vector.set_ecliptical(promissor_data['lon'], promissor_data['lat'])
+    directions.promissor = vector.equatorial()
+    vector.set_ecliptical(acceptor_data['lon'], acceptor_data['lat'])
+    directions.acceptor = vector.equatorial()
+
+    prom_rasc = directions.promissor.rasc
+    prom_dec = directions.promissor.dec
+
+    # Draw acceptor and promissor points
+    point(vector, promissor_data, axs, line=False)
+
+    # Get directional arc
+    all_directions = directions.direction_placidus()
+    if all_directions is None:
+        return None
+
+    # We'll take a positive arc to exclude reverse direction
+    # Alternatively, we may choose the arc with min abs(len)
+    arc = sorted([
+        item['dist'] for item in all_directions
+        if item['aspect'] == aspect
+    ], reverse=True)[0]
+    print(arc)
+
+    # Draw the arc
+    rasc = np.linspace(prom_rasc - arc, prom_rasc)
+    vector.set_equatorial(rasc, prom_dec)
+    axs.plot(*xyz_hrz(vector),
+             label='direction',
+             linewidth=1.2,
+             color="red")
+
+    # Draw end point of directional arc on sphere
+    vector.set_equatorial(prom_rasc - arc, prom_dec)
+    _x, _y, _z = xyz_hrz(vector)
+    axs.plot([_x, 0], [_y, 0], [_z, 0], color='red',
+             linewidth=1, linestyle='dotted')
+    axs.scatter(
+        _x, _y, _z,
+        color="grey",
+        label=None
+    )
+
+    # Draw end point of directional arc on Zodiac
+    end_point = vector.ecliptical()
+    end_point_data = dict(
+        lon=end_point.lon,
+        lat=end_point.lat,
+        label='Aspect',
+        color="red",
+    )
+    zodiac_2d(vector, [end_point_data, acceptor_data], axs2)
+
+    meridian_distance_portions(vector, end_point_data, axs)
+    return None

@@ -12,7 +12,7 @@ DATA = dict(
     geo_lon=44 + 46/60,
     geo_lat=66 + 43/60,
     # Set mode for the output figure
-    animate=True
+    animate=False
 )
 
 visualize(DATA, figures)
