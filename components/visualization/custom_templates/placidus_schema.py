@@ -3,24 +3,24 @@ Define points and figures to display
 a Placidus house system.
 """
 from matplotlib.axes import Axes
-from vector import Vector
+from sphere import Sphere
 from components.visualization import draw
 
 
-def points(vector: Vector) -> dict[dict]:
+def points(sphere: Sphere) -> dict[dict]:
     """
     Returns a dictionary of points to display on
     celestial_sphere and on Zodiac circle
     """
     point_asc = dict(
-        lon=vector.asc(),
+        lon=sphere.asc,
         lat=0,
         label="ASC",
         color="red",
     )
 
     point_mc = dict(
-        lon=vector.medium_coeli(),
+        lon=sphere.medium_coeli,
         lat=0,
         label="MC",
         color="orange",
@@ -32,18 +32,20 @@ def points(vector: Vector) -> dict[dict]:
     )
 
 
-def figures(vector: Vector, sphere: Axes, zodiac: Axes) -> None:
+def figures(sphere: Sphere, figure3d: Axes, figure2d: Axes) -> None:
     """
     Call draw functions to include points
     and objects to visualization on celestial
     sphere and Zodiac circle
     """
 
-    pnt = points(vector)
-    draw.surface(vector, sphere)
-    draw.ecliptic(vector, sphere)
-    draw.point(vector, pnt['mc'], sphere)
-    draw.point(vector, pnt['asc'], sphere)
+    pnt = points(sphere)
+    draw.surface(sphere, figure3d)
+    draw.ecliptic(sphere, figure3d)
+    draw.horizon(sphere, figure3d)
+    draw.equator(sphere, figure3d)
+    draw.point(sphere, pnt['mc'], figure3d)
+    draw.point(sphere, pnt['asc'], figure3d)
 
-    draw.placidus(vector, sphere)
-    draw.placidus_schema(vector, sphere)
+    draw.placidus(sphere, figure3d)
+    draw.placidus_schema(sphere, figure3d)

@@ -4,7 +4,7 @@ Astrological calculations for primary directions
 from datetime import datetime
 from typing import Optional
 from components.vector import coords as crd
-from vector import Vector, true_distance
+from sphere import Sphere, true_distance
 
 
 class Directions:
@@ -12,8 +12,8 @@ class Directions:
     Calculates different types of primary directions
     """
 
-    def __init__(self, vector: Vector) -> None:
-        self.vector = vector
+    def __init__(self, sphere: Sphere) -> None:
+        self.sphere = sphere
         self.__promissor = None
         self.__acceptor = None
 
@@ -52,8 +52,7 @@ class Directions:
         2 - west-bottom
         3 - west-top, or west horizon
         """
-        self.vector.set_equatorial(right_asc, dec)
-        xyz_hrz = self.vector.cartesian_horizontal()
+        xyz_hrz = self.sphere.set_equatorial(right_asc, dec).horizontal_xyz()
         if xyz_hrz.x >= 0 and xyz_hrz.z >= 0:
             return 0
         if xyz_hrz.x > 0 and xyz_hrz.z < 0:
@@ -69,8 +68,8 @@ class Directions:
         relative to diurnal/nocturnal semiarc
         for a given point
         """
-        dsa = self.vector.dsa(dec)
-        umd = self.vector.umd(right_asc)
+        dsa = self.sphere.dsa(dec)
+        umd = self.sphere.umd(right_asc)
         if dsa is None:
             return None
 
@@ -89,8 +88,8 @@ class Directions:
         distance portion MDP(B) in a given
         quadrant(B) in placidus system
         """
-        ramc = self.vector.ramc()
-        dsa = self.vector.dsa(dec)
+        ramc = self.sphere.ramc
+        dsa = self.sphere.dsa(dec)
         if dsa is None:
             return None
         nsa = 180 - dsa
@@ -169,23 +168,21 @@ class Directions:
 # Example of usage:
 # ╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌
 if __name__ == '__main__':
-    # Initiate a vector object
-    test_vector = Vector(
+    # Initiate a celestial sphere object
+    test_sphere = Sphere(
         datetime(2022, 10, 10, 4, 20),
         time_zone=4,
         geo_lon=44 + 46/60,
         geo_lat=66 + 43/60,
     )
 
-    test_directions = Directions(test_vector)
+    test_directions = Directions(test_sphere)
 
     # Set the 1st point
-    test_vector.set_ecliptical(150, 0)
-    point1 = test_vector.equatorial()
+    point1 = test_sphere.set_ecliptical(150, 0).equatorial()
 
     # Set the 2nd point
-    test_vector.set_ecliptical(116.92, 0)
-    point2 = test_vector.equatorial()
+    point2 = test_sphere.set_ecliptical(116.92, 0).equatorial()
 
     # Init promissor and significator
     test_directions.promissor = point1
