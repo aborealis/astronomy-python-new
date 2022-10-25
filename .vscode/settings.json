@@ -4,5 +4,10 @@
     // Whitelist swisseph to remove lint errors
     "python.linting.pylintArgs": [
         "--extension-pkg-whitelist=swisseph"
-    ]
+    ],
+    "python.testing.pytestArgs": [
+        "."
+    ],
+    "python.testing.unittestEnabled": false,
+    "python.testing.pytestEnabled": true
 }
