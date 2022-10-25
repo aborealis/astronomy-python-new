@@ -14,8 +14,10 @@ def possible_aspects(aspect: Optional[int] = None):
     """
     if aspect is None:
         return [-120, -90, - 60, 0, 60, 90, 120, 180]
-    if aspect in [60, 90, 120, 180]:
+    if aspect in [60, 90, 120]:
         return [-1 * aspect, aspect]
+    if aspect == 180:
+        return [180]
     return [0]
 
 
@@ -94,11 +96,11 @@ class Directions:
     # Placidus mundane directions:
     # ╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌
 
-    def mundane_positions_placidus(self,
-                                   acceptor: crd.Vector,
-                                   aspect: Optional[int] = None) -> Optional[list[dict]]:
+    def aspect_positions_placidus_mundane(self,
+                                          acceptor: crd.Vector,
+                                          aspect: Optional[int] = None) -> Optional[list[float]]:
         """
-        Returns mundane positions of the acceptor.
+        Returns mundane aspect positions of the acceptor.
         It is the point on equatorial plane with the same
         meridian distance portion in the same quadrant
         as the acceptor, plus all major aspects to
@@ -133,20 +135,25 @@ class Directions:
         Returns mundane primary directions of the promissor
         to aspect points of the acceptor
         """
-        mundane_positions = self.mundane_positions_placidus(acceptor, aspect)
-        if mundane_positions is None:
+        aspect_positions = self.aspect_positions_placidus_mundane(
+            acceptor, aspect)
+        if aspect_positions is None:
             return None
-        promissor_dec = promissor.equatorial().dec
-        promissor_rasc = promissor.equatorial().rasc
 
         # Find conjunctions of the promissor with these aspect positions
+        promissor_dec = promissor.equatorial().dec
+        promissor_rasc = promissor.equatorial().rasc
         directions = []
-        for item in mundane_positions:
+        for item in aspect_positions:
             eqt_quadrant = self.quadrant(item['rasc'], dec=0)
             eqt_mdp = self.md_portion(item['rasc'], dec=0)
             aspect_rasc = self.__ra_conj_placidus(
                 eqt_mdp, eqt_quadrant, promissor_dec
             )
+
+            # In case of no ascension
+            if aspect_rasc is None:
+                continue
             distance = true_distance(aspect_rasc, promissor_rasc)
             check = true_distance(aspect_rasc, promissor_rasc - distance)
 
@@ -155,6 +162,47 @@ class Directions:
                 dist=distance if abs(check) < 1e-10 else -distance,
                 aspect=item['aspect']
             ))
+
+        return directions
+
+    # ╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌
+    # Placidus zodiacal directions:
+    # ╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌
+    def aspect_positions_placidus_zodiac(self,
+                                         promissor: crd.Vector,
+                                         aspect: Optional[int] = None) -> Optional[list[dict]]:
+        """
+        Returns zodiacal aspect positions of the
+        promissor. It is the projection of the
+        promissor in equatorial plane, plus all
+        major aspects to that point on the equatorial plane.
+        """
+        prom_lon = promissor.ecliptical().lon
+        return [dict(lon=(prom_lon + _a) % 360, aspect=abs(_a)) for _a in possible_aspects(aspect)]
+
+    def placidus_zodiac(self,
+                        promissor: crd.Vector,
+                        acceptor: crd.Vector,
+                        aspect: Optional[int] = None) -> list[dict]:
+        """
+        Returns zodiacal primary directions of the promissor's
+        aspect points to the acceptor
+        """
+        aspect_positions = self.aspect_positions_placidus_zodiac(
+            promissor, aspect)
+
+        # Find conjunctions of the promissor with these aspect positions
+        directions = []
+        for item in aspect_positions:
+            new_promissor = self.sphere.set_ecliptical(item['lon'], 0)
+            arc = self.placidus_mundane(
+                new_promissor, acceptor, aspect=0
+            )
+
+            # In case of no ascension:
+            if not arc:
+                continue
+            directions.append(dict(dist=arc[0]['dist'], aspect=item['aspect']))
 
         return directions
 
@@ -179,6 +227,5 @@ if __name__ == '__main__':
     # Set the 2nd point
     accpt = test_sphere.set_ecliptical(116.92, 0)
 
-    print(test_directions.placidus_mundane(
-        proms, accpt, 0
-    ))
+    print(test_directions.placidus_mundane(proms, accpt, aspect=None))
+    print(test_directions.placidus_zodiac(proms, accpt, aspect=None))

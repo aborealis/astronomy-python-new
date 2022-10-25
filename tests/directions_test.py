@@ -55,12 +55,8 @@ def test_placidus_mundi_moon_conj_mc():
         0
     )
 
-    all_directions = directions.placidus_mundane(moon, _mc)
-    conj = [
-        item['dist']
-        for item in all_directions
-        if item['aspect'] == 0
-    ][0]
+    all_directions = directions.placidus_mundane(moon, _mc, aspect=0)
+    conj = all_directions[0]['dist']
 
     assert abs(conj - 16.1) < 1e-1
 
@@ -78,12 +74,8 @@ def test_placidus_zodiac_moon_conj_mc():
         0
     )
 
-    all_directions = directions.placidus_mundane(moon, _mc)
-    conj = [
-        item['dist']
-        for item in all_directions
-        if item['aspect'] == 0
-    ][0]
+    all_directions = directions.placidus_mundane(moon, _mc, aspect=0)
+    conj = all_directions[0]['dist']
 
     assert abs(conj - 15.95) < 1e-1
 
@@ -101,12 +93,8 @@ def test_placidus_mundi_jup_conj_dsc():
         0
     )
 
-    all_directions = directions.placidus_mundane(jupiter, dsc)
-    conj = [
-        item['dist']
-        for item in all_directions
-        if item['aspect'] == 0
-    ][0]
+    all_directions = directions.placidus_mundane(jupiter, dsc, aspect=0)
+    conj = all_directions[0]['dist']
     assert abs(conj + 45.43) < 1e-1
 
 
@@ -123,12 +111,8 @@ def test_placidus_zodiac_jup_conj_dsc():
         0
     )
 
-    all_directions = directions.placidus_mundane(jupiter, dsc)
-    conj = [
-        item['dist']
-        for item in all_directions
-        if item['aspect'] == 0
-    ][0]
+    all_directions = directions.placidus_mundane(jupiter, dsc, aspect=0)
+    conj = all_directions[0]['dist']
     assert abs(conj + 45.54) < 1e-1
 
 
@@ -145,12 +129,8 @@ def test_placidus_mundi_sun_conj_mer():
         all_planets[2].lat
     )
 
-    all_directions = directions.placidus_mundane(sun, mer)
-    conj = [
-        item['dist']
-        for item in all_directions
-        if item['aspect'] == 0
-    ][0]
+    all_directions = directions.placidus_mundane(sun, mer, aspect=0)
+    conj = all_directions[0]['dist']
     assert abs(conj - 12.85) < 1e-1
 
 
@@ -167,13 +147,10 @@ def test_placidus_mundi_mon_tri_sat():
         all_planets[6].lat
     )
 
-    all_directions = directions.placidus_mundane(moon, sat)
-    aspect = [
-        item['dist']
-        for item in all_directions
-        if item['aspect'] == 120
-    ][0]
-    assert abs(aspect + 5.77) < 1e-1
+    all_directions = directions.placidus_mundane(moon, sat, aspect=120)
+    all_directions.sort(key=lambda item: abs(item['dist']))
+    shortest = all_directions[0]['dist']
+    assert abs(shortest + 5.77) < 1e-1
 
 
 def test_placidus_zodiac_mon_tri_sat():
@@ -197,3 +174,23 @@ def test_placidus_zodiac_mon_tri_sat():
     ][0]
 
     assert abs(aspect + 5.38) < 1e-1
+
+
+def test_placidus_zodiac_mon_tri_sat2():
+    """
+    Compare Moon-Saturn zodiacal trigone with result of Bob Makransky
+    """
+    moon = sphere.set_ecliptical(
+        all_planets[1].lon,
+        0
+    )
+    sat = sphere.set_ecliptical(
+        all_planets[6].lon,
+        all_planets[6].lat
+    )
+
+    print(moon.ecliptical())
+    all_directions = directions.placidus_zodiac(moon, sat, 120)
+    all_directions.sort(key=lambda item: abs(item['dist']))
+    shortest = all_directions[0]['dist']
+    assert abs(shortest + 5.38) < 1e-1

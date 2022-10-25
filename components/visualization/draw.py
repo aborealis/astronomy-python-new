@@ -270,7 +270,7 @@ def mundane_positions_placidus(sphere: Sphere,
     point(sphere, acceptor_data, axs)
 
     # Find mundane positions of the acceptor
-    mundane_positions = directions.mundane_positions_placidus(acceptor)
+    mundane_positions = directions.aspect_positions_placidus_mundane(acceptor)
     if not mundane_positions:
         return None
     conjunction = [
