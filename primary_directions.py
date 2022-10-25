@@ -7,6 +7,18 @@ from components.vector import coords as crd
 from sphere import Sphere, true_distance
 
 
+def possible_aspects(aspect: Optional[int] = None):
+    """
+    Returns the list of possible aspects (sinister and
+    dexter aspects) based on aspect's angle in degrees
+    """
+    if aspect is None:
+        return [-120, -90, - 60, 0, 60, 90, 120, 180]
+    if aspect in [60, 90, 120, 180]:
+        return [-1 * aspect, aspect]
+    return [0]
+
+
 class Directions:
     """
     Calculates different types of primary directions
@@ -14,34 +26,6 @@ class Directions:
 
     def __init__(self, sphere: Sphere) -> None:
         self.sphere = sphere
-        self.__promissor = None
-        self.__acceptor = None
-
-    @property
-    def promissor(self):
-        """The getter function for promissaor"""
-        return self.__promissor
-
-    @property
-    def acceptor(self):
-        """The getter function for significator"""
-        return self.__acceptor
-
-    @promissor.setter
-    def promissor(self, coords: crd.Equatorial) -> None:
-        if not isinstance(coords, crd.Equatorial):
-            raise ValueError(
-                "Promissor should be set in equatorial coordinates"
-            )
-        self.__promissor = coords
-
-    @acceptor.setter
-    def acceptor(self, coords: crd.Equatorial) -> None:
-        if not isinstance(coords, crd.Equatorial):
-            raise ValueError(
-                "Acceptor should be set in equatorial coordinates"
-            )
-        self.__acceptor = coords
 
     def quadrant(self, right_asc: float, dec: float) -> int:
         """
@@ -60,6 +44,10 @@ class Directions:
         if xyz_hrz.x < 0 and xyz_hrz.z < 0:
             return 2
         return 3
+
+    # ╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌
+    # Placidus direction common methods:
+    # ╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌
 
     def md_portion(self, right_asc: float, dec: float) -> Optional[float]:
         """
@@ -102,19 +90,23 @@ class Directions:
             return ramc + 180 - mdp * nsa
         return ramc + 180 + mdp * nsa
 
-    def mundane_positions_placidus(self) -> Optional[list[dict]]:
+    # ╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌
+    # Placidus mundane directions:
+    # ╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌
+
+    def mundane_positions_placidus(self,
+                                   acceptor: crd.Vector,
+                                   aspect: Optional[int] = None) -> Optional[list[dict]]:
         """
         Returns mundane positions of the acceptor.
         It is the point on equatorial plane with the same
         meridian distance portion in the same quadrant
-        as the acceptorm plus all major aspects to
-        this point on the equatorial plane.
+        as the acceptor, plus all major aspects to
+        that point on the equatorial plane.
         """
-        if self.__acceptor is None:
-            return None
 
-        acceptor_rasc = self.__acceptor.rasc
-        acceptor_dec = self.__acceptor.dec
+        acceptor_rasc = acceptor.equatorial().rasc
+        acceptor_dec = acceptor.equatorial().dec
 
         acceptor_quadrant = self.quadrant(acceptor_rasc, acceptor_dec)
         acceptor_mdp = self.md_portion(acceptor_rasc, acceptor_dec)
@@ -129,20 +121,23 @@ class Directions:
 
         # Find aspect positions of that point on the equator plane
         return [
-            dict(rasc=(eqt_rasc + aspect) % 360, aspect=abs(aspect))
-            for aspect in [-120, -90, -60, 0, 60, 90, 120, 180]
+            dict(rasc=(eqt_rasc + _a) % 360, aspect=abs(_a))
+            for _a in possible_aspects(aspect)
         ]
 
-    def placidus_mundane(self) -> Optional[list[dict]]:
+    def placidus_mundane(self,
+                         promissor: crd.Vector,
+                         acceptor: crd.Vector,
+                         aspect: Optional[int] = None) -> Optional[list[dict]]:
         """
-        Returns primary directions of the promissor
+        Returns mundane primary directions of the promissor
         to aspect points of the acceptor
         """
-        mundane_positions = self.mundane_positions_placidus()
+        mundane_positions = self.mundane_positions_placidus(acceptor, aspect)
         if mundane_positions is None:
             return None
-        promissor_dec = self.__promissor.dec
-        promissor_rasc = self.__promissor.rasc
+        promissor_dec = promissor.equatorial().dec
+        promissor_rasc = promissor.equatorial().rasc
 
         # Find conjunctions of the promissor with these aspect positions
         directions = []
@@ -179,13 +174,11 @@ if __name__ == '__main__':
     test_directions = Directions(test_sphere)
 
     # Set the 1st point
-    point1 = test_sphere.set_ecliptical(150, 0).equatorial()
+    proms = test_sphere.set_ecliptical(150, 0)
 
     # Set the 2nd point
-    point2 = test_sphere.set_ecliptical(116.92, 0).equatorial()
+    accpt = test_sphere.set_ecliptical(116.92, 0)
 
-    # Init promissor and significator
-    test_directions.promissor = point1
-    test_directions.acceptor = point2
-
-    print(test_directions.placidus_mundane())
+    print(test_directions.placidus_mundane(
+        proms, accpt, 0
+    ))

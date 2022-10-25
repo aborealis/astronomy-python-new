@@ -263,14 +263,14 @@ def mundane_positions_placidus(sphere: Sphere,
     """
     # Set acceptor
     directions = Directions(sphere)
-    vector = sphere.set_ecliptical(acceptor_data['lon'], acceptor_data['lat'])
-    directions.acceptor = vector.equatorial()
+    acceptor = sphere.set_ecliptical(
+        acceptor_data['lon'], acceptor_data['lat'])
 
     # Draw acceptor point
     point(sphere, acceptor_data, axs)
 
     # Find mundane positions of the acceptor
-    mundane_positions = directions.mundane_positions_placidus()
+    mundane_positions = directions.mundane_positions_placidus(acceptor)
     if not mundane_positions:
         return None
     conjunction = [
@@ -307,10 +307,12 @@ def meridian_distance_portions(sphere: Sphere,
     """
     # Set acceptor
     directions = Directions(sphere)
-    vector = sphere.set_ecliptical(acceptor_data['lon'], acceptor_data['lat'])
-    directions.acceptor = vector.equatorial()
-    acc_rasc = directions.acceptor.rasc
-    acc_dec = directions.acceptor.dec
+    acceptor_eqt = sphere.set_ecliptical(
+        acceptor_data['lon'],
+        acceptor_data['lat']
+    ).equatorial()
+    acc_rasc = acceptor_eqt.rasc
+    acc_dec = acceptor_eqt.dec
 
     # Draw MDPs
     acceptor_quadrant = directions.quadrant(acc_rasc, acc_dec)
@@ -354,21 +356,26 @@ def direction_arc(sphere: Sphere,
     """
     # Set promissor and significator
     directions = Directions(sphere)
-    vector = sphere.set_ecliptical(
-        promissor_data['lon'], promissor_data['lat'])
-    directions.promissor = vector.equatorial()
-    vector = sphere.set_ecliptical(
-        acceptor_data['lon'], acceptor_data['lat'])
-    directions.acceptor = vector.equatorial()
+    promissor = sphere.set_ecliptical(
+        promissor_data['lon'],
+        promissor_data['lat'])
+    acceptor = sphere.set_ecliptical(
+        acceptor_data['lon'],
+        acceptor_data['lat'])
 
-    prom_rasc = directions.promissor.rasc
-    prom_dec = directions.promissor.dec
+    promissor_eqt = promissor.equatorial()
+    prom_rasc = promissor_eqt.rasc
+    prom_dec = promissor_eqt.dec
 
     # Draw acceptor and promissor points
     point(sphere, promissor_data, axs, line=False)
 
     # Get directional arc
-    all_directions = directions.placidus_mundane()
+    all_directions = directions.placidus_mundane(
+        promissor,
+        acceptor,
+        aspect
+    )
     if all_directions is None:
         return None
 
@@ -376,7 +383,6 @@ def direction_arc(sphere: Sphere,
     # Alternatively, we may choose the arc with min abs(len)
     arc = sorted([
         item['dist'] for item in all_directions
-        if item['aspect'] == aspect
     ], reverse=True)[0]
 
     # Draw the arc
@@ -409,7 +415,6 @@ def direction_arc(sphere: Sphere,
         label='Aspect',
         color="grey",
     )
-    print(end_point_data)
     zodiac_2d(sphere, [end_point_data, acceptor_data], axs2)
 
     meridian_distance_portions(sphere, end_point_data, axs)

@@ -55,9 +55,7 @@ def test_placidus_mundi_moon_conj_mc():
         0
     )
 
-    directions.promissor = moon.equatorial()
-    directions.acceptor = _mc.equatorial()
-    all_directions = directions.placidus_mundane()
+    all_directions = directions.placidus_mundane(moon, _mc)
     conj = [
         item['dist']
         for item in all_directions
@@ -80,9 +78,7 @@ def test_placidus_zodiac_moon_conj_mc():
         0
     )
 
-    directions.promissor = moon.equatorial()
-    directions.acceptor = _mc.equatorial()
-    all_directions = directions.placidus_mundane()
+    all_directions = directions.placidus_mundane(moon, _mc)
     conj = [
         item['dist']
         for item in all_directions
@@ -105,9 +101,7 @@ def test_placidus_mundi_jup_conj_dsc():
         0
     )
 
-    directions.promissor = jupiter.equatorial()
-    directions.acceptor = dsc.equatorial()
-    all_directions = directions.placidus_mundane()
+    all_directions = directions.placidus_mundane(jupiter, dsc)
     conj = [
         item['dist']
         for item in all_directions
@@ -129,9 +123,7 @@ def test_placidus_zodiac_jup_conj_dsc():
         0
     )
 
-    directions.promissor = jupiter.equatorial()
-    directions.acceptor = dsc.equatorial()
-    all_directions = directions.placidus_mundane()
+    all_directions = directions.placidus_mundane(jupiter, dsc)
     conj = [
         item['dist']
         for item in all_directions
@@ -153,9 +145,7 @@ def test_placidus_mundi_sun_conj_mer():
         all_planets[2].lat
     )
 
-    directions.promissor = sun.equatorial()
-    directions.acceptor = mer.equatorial()
-    all_directions = directions.placidus_mundane()
+    all_directions = directions.placidus_mundane(sun, mer)
     conj = [
         item['dist']
         for item in all_directions
@@ -177,9 +167,7 @@ def test_placidus_mundi_mon_tri_sat():
         all_planets[6].lat
     )
 
-    directions.promissor = moon.equatorial()
-    directions.acceptor = sat.equatorial()
-    all_directions = directions.placidus_mundane()
+    all_directions = directions.placidus_mundane(moon, sat)
     aspect = [
         item['dist']
         for item in all_directions
@@ -201,9 +189,7 @@ def test_placidus_zodiac_mon_tri_sat():
         all_planets[6].lat
     )
 
-    directions.promissor = moon.equatorial()
-    directions.acceptor = sat.equatorial()
-    all_directions = directions.placidus_mundane()
+    all_directions = directions.placidus_mundane(moon, sat)
     aspect = [
         item['dist']
         for item in all_directions
