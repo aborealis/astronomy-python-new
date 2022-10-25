@@ -332,7 +332,7 @@ def meridian_distance_portions(sphere: Sphere,
         ratio = -1 * acceptor_mdp
 
     for dec in range(-90, 90):
-        dsa = vector.dsa(dec)
+        dsa = sphere.dsa(dec)
         if dsa is None:
             continue
         path = dsa if acceptor_quadrant in [0, 3] else 180 - dsa
@@ -368,7 +368,7 @@ def direction_arc(sphere: Sphere,
     point(sphere, promissor_data, axs, line=False)
 
     # Get directional arc
-    all_directions = directions.direction_placidus()
+    all_directions = directions.placidus_mundane()
     if all_directions is None:
         return None
 
@@ -399,13 +399,17 @@ def direction_arc(sphere: Sphere,
     )
 
     # Draw end point of directional arc on Zodiac
-    end_point = vector.ecliptical()
+    end_point = sphere.set_equatorial(
+        prom_rasc - arc,
+        prom_dec
+    ).ecliptical()
     end_point_data = dict(
         lon=end_point.lon,
         lat=end_point.lat,
         label='Aspect',
-        color="red",
+        color="grey",
     )
+    print(end_point_data)
     zodiac_2d(sphere, [end_point_data, acceptor_data], axs2)
 
     meridian_distance_portions(sphere, end_point_data, axs)

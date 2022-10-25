@@ -133,7 +133,7 @@ class Directions:
             for aspect in [-120, -90, -60, 0, 60, 90, 120, 180]
         ]
 
-    def direction_placidus(self) -> Optional[list[dict]]:
+    def placidus_mundane(self) -> Optional[list[dict]]:
         """
         Returns primary directions of the promissor
         to aspect points of the acceptor
@@ -188,4 +188,4 @@ if __name__ == '__main__':
     test_directions.promissor = point1
     test_directions.acceptor = point2
 
-    print(test_directions.direction_placidus())
+    print(test_directions.placidus_mundane())

@@ -169,17 +169,28 @@ class Sphere:
         Creates a vector objects from the <self> object
         which has an .__equatorial property.
         """
+        equatorial = self.__equatorial
+        equatorial_xyz = self.__equatorial_xyz
+        rasc = self.__equatorial.rasc
+        dec = self.__equatorial.dec
+
+        # Instead of passing the links to the outer's class
+        # methods, we will construct new methods which use
+        # context environment. Otherwise each time the new
+        # vector object is initiated, the functions below
+        # will be called with a new .self.__equatorial property
+        # for all previously created vectors.
         return crd.Vector(
-            equatorial=self.__get_equatorial,
-            ecliptical=self.__get_ecliptical,
-            horizontal=self.__get_horizontal,
-            equatorial_xyz=self.__get_equatorial_xyz,
-            ecliptical_xyz=self.__get_ecliptical_xyz,
-            horizontal_xyz=self.__get_horizontal_xyz,
-            dsa=self.dsa,
-            umd=self.umd,
-            obl_asc=self.obl_asc,
-            asc_diff=self.ascension_diff,
+            equatorial=lambda: self.__get_equatorial(equatorial),
+            ecliptical=lambda: self.__get_ecliptical(equatorial_xyz),
+            horizontal=lambda: self.__get_horizontal(equatorial_xyz),
+            equatorial_xyz=lambda: self.__get_equatorial_xyz(equatorial_xyz),
+            ecliptical_xyz=lambda: self.__get_ecliptical_xyz(equatorial_xyz),
+            horizontal_xyz=lambda: self.__get_horizontal_xyz(equatorial_xyz),
+            dsa=lambda: self.dsa(dec),
+            umd=lambda: self.umd(rasc),
+            obl_asc=lambda: self.obl_asc(rasc, dec),
+            asc_diff=lambda: self.asc_diff(dec),
         )
 
     def set_equatorial(self, rasc: float, dec: float) -> crd.Vector:
@@ -212,43 +223,61 @@ class Sphere:
         self.__equatorial_xyz = xyz_eqt
         return self.__set_vector()
 
-    def __get_equatorial_xyz(self) -> crd.Cartesian:
+    def __get_equatorial_xyz(self,
+                             equatorial_xyz: Optional[crd.Cartesian] = None
+                             ) -> crd.Cartesian:
         """
         Converts current vector to equatorial cartesian coordinates.
         """
-        return self.__equatorial_xyz
+        if equatorial_xyz is None:
+            return self.__equatorial_xyz
+        return equatorial_xyz
 
-    def __get_equatorial(self) -> crd.Equatorial:
+    def __get_equatorial(self,
+                         equatorial: Optional[crd.Equatorial] = None
+                         ) -> crd.Equatorial:
         """
         Converts current vector to equatorial spherical coordinates.
         """
+        if equatorial:
+            return equatorial
         return self.__equatorial
 
-    def __get_ecliptical_xyz(self) -> crd.Cartesian:
+    def __get_ecliptical_xyz(self,
+                             equatorial_xyz: Optional[crd.Cartesian] = None
+                             ) -> crd.Cartesian:
         """
         Converts current vector to ecliptical cartesian coordinates.
         """
-        return self.__eqt_to_ecl__(self.__equatorial_xyz)
+        xyz_eqt = self.__equatorial_xyz if equatorial_xyz is None else equatorial_xyz
+        return self.__eqt_to_ecl__(xyz_eqt)
 
-    def __get_ecliptical(self) -> crd.Ecliptical:
+    def __get_ecliptical(self,
+                         equatorial_xyz: Optional[crd.Cartesian] = None
+                         ) -> crd.Ecliptical:
         """
         Converts current vector to ecliptical spherical coordinates.
         """
-        xyz_ecl = self.__get_ecliptical_xyz()
+        xyz_ecl = self.__get_ecliptical_xyz(equatorial_xyz)
         spherical = self.__cartesian_to_spherical__(xyz_ecl)
         return crd.Ecliptical(*spherical)
 
-    def __get_horizontal_xyz(self) -> crd.Cartesian:
+    def __get_horizontal_xyz(self,
+                             equatorial_xyz: Optional[crd.Cartesian] = None
+                             ) -> crd.Cartesian:
         """
         Converts current vector to horizontal spherical coordinates.
         """
-        return self.__eqt_to_hrz__(self.__equatorial_xyz)
+        xyz_eqt = self.__equatorial_xyz if equatorial_xyz is None else equatorial_xyz
+        return self.__eqt_to_hrz__(xyz_eqt)
 
-    def __get_horizontal(self) -> crd.Horizontal:
+    def __get_horizontal(self,
+                         equatorial_xyz: Optional[crd.Cartesian] = None
+                         ) -> crd.Horizontal:
         """
         Converts current vector to horizontal spherical coordinates.
         """
-        xyz_hrz = self.__get_horizontal_xyz()
+        xyz_hrz = self.__get_horizontal_xyz(equatorial_xyz)
         spherical = self.__cartesian_to_spherical__(xyz_hrz)
         return crd.Horizontal(90 - spherical[0], spherical[1])
 
@@ -256,7 +285,7 @@ class Sphere:
     # Vector-specific methods
     # ╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌
 
-    def ascension_diff(self, dec: Optional[float] = None) -> float:
+    def asc_diff(self, dec: Optional[float] = None) -> float:
         """
         Returns ascension difference for a given declination
         """
@@ -281,7 +310,7 @@ class Sphere:
         decl = dec if dec is not None else self.__equatorial.dec
         if None in [r_asc, decl]:
             return None
-        ascension_diff = self.ascension_diff(decl)
+        ascension_diff = self.asc_diff(decl)
 
         # In case of no ascension at extreme latitudes
         if ascension_diff is None:
@@ -305,7 +334,7 @@ class Sphere:
         decl = dec if dec is not None else self.__equatorial.dec
         if decl is None:
             return None
-        asc_diff = self.ascension_diff(decl)
+        asc_diff = self.asc_diff(decl)
 
         # In case of no ascension at extreme latitudes
         if asc_diff is None:
