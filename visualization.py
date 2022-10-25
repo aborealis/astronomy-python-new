@@ -3,7 +3,7 @@ Visualize celestial sphere
 """
 from datetime import datetime
 from components.visualization.show import visualize
-from components.visualization.custom_templates.placidus_mund_directions import figures
+from components.visualization.custom_templates.placidus_zodiac_directions import figures
 
 # Set spacial data
 DATA = dict(

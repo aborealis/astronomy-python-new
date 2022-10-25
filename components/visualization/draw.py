@@ -348,8 +348,7 @@ def direction_arc(sphere: Sphere,
                   promissor_data: dict,
                   acceptor_data: dict,
                   aspect: int,
-                  axs: Axes,
-                  axs2: Axes) -> None:
+                  axs: Axes) -> None:
     """
     Draws directional arc between promissor
     and acceptor's aspect
@@ -366,9 +365,6 @@ def direction_arc(sphere: Sphere,
     promissor_eqt = promissor.equatorial()
     prom_rasc = promissor_eqt.rasc
     prom_dec = promissor_eqt.dec
-
-    # Draw acceptor and promissor points
-    point(sphere, promissor_data, axs, line=False)
 
     # Get directional arc
     all_directions = directions.placidus_mundane(
@@ -415,7 +411,42 @@ def direction_arc(sphere: Sphere,
         label='Aspect',
         color="grey",
     )
-    zodiac_2d(sphere, [end_point_data, acceptor_data], axs2)
 
-    meridian_distance_portions(sphere, end_point_data, axs)
+    return end_point_data
+
+
+def zodiac_positions_placidus(sphere: Sphere,
+                              promissor_data: dict,
+                              axs: Axes) -> None:
+    """
+    Draws zodiac positions of the promissor
+    """
+    # Set acceptor
+    directions = Directions(sphere)
+    promissor = sphere.set_ecliptical(
+        promissor_data['lon'], promissor_data['lat'])
+
+    # Find aspect positions of the acceptor
+    aspect_positions = directions.aspect_positions_placidus_zodiac(promissor)
+    if not aspect_positions:
+        return None
+    aspect_positions = [
+        item['lon'] for item in aspect_positions
+        if item['aspect']
+    ]
+
+    # Draw promissor's aspect positions
+    xyz_hrz = sphere.set_ecliptical(promissor_data['lon'], 0).horizontal_xyz()
+    _x0, _y0, _z0 = xyz_hrz.aslist()
+
+    for _m in aspect_positions:
+        xyz_hrz = sphere.set_ecliptical(_m, 0).horizontal_xyz()
+        _x, _y, _z = xyz_hrz.aslist()
+        axs.plot([_x, _x0], [_y, _y0], [_z, _z0], color=(.7, .2, .7),
+                 linewidth=0.8, linestyle='solid')
+        axs.scatter(
+            _x, _y, _z,
+            color=(.7, .2, .7),
+            label=None
+        )
     return None
