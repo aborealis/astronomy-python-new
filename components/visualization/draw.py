@@ -146,11 +146,11 @@ def semiarc(sphere: Sphere, point_data: dict, axs: Axes, s_type: str):
     """
     vector = sphere.set_ecliptical(point_data['lon'], point_data['lat'])
 
-    if vector.dsa is None:
+    if vector.dsa() is None:
         return None
 
     eastern = vector.horizontal_xyz().x > 0
-    delta = vector.dsa if s_type == 'DSA' else vector.umd
+    delta = vector.dsa() if s_type == 'DSA' else vector.umd()
     if eastern:
         rasc = np.linspace(sphere.ramc, sphere.ramc + delta, 50)
     else:

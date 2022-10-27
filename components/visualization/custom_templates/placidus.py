@@ -4,7 +4,7 @@ a Placidus house system.
 """
 from matplotlib.axes import Axes
 from sphere import Sphere
-from components.visualization import draw as draw
+from components.visualization import draw
 
 
 def points(sphere: Sphere) -> dict[dict]:
