@@ -24,12 +24,20 @@ localtime_utc = tm.__localtime_utc__(
     tm.__localtime__(data.naive_datetime, data.time_zone)
 )
 all_planets = swe.scan_planets(localtime_utc)
-all_houses = swe.scan_houses(
+all_houses_placidus = swe.scan_houses(
     localtime_utc,
     data.geo_lon,
     data.geo_lat,
     system='P'
 )
+
+all_houses_regio = swe.scan_houses(
+    localtime_utc,
+    data.geo_lon,
+    data.geo_lat,
+    system='R'
+)
+
 sphere = Sphere(data.naive_datetime,
                 data.time_zone,
                 data.geo_lon,
@@ -69,7 +77,18 @@ def test_placidus_5th_house_cusp():
     Compare my calculations with swisseph module
     for placidus house system
     """
-    diff = abs(sphere.placidus(5) - all_houses[4])
+    diff = abs(sphere.placidus(5)[0] - all_houses_placidus[4])
+    assert diff < 1e-2
+
+
+def test_regiomontanus_5th_house_cusp():
+    """
+    Compare my calculations with swisseph module
+    for placidus house system
+    """
+    cusp5 = sphere.regiomontanus(5)
+    cusp5swe = all_houses_regio[4]
+    diff = abs(cusp5 - cusp5swe)
     assert diff < 1e-2
 
 
@@ -78,10 +97,10 @@ def test_placidus_5th_lmd_is_third_of_nsa():
     lower meridian distance for 5th house should be
     one third of nocturnal semiarc
     """
-    cusp5 = sphere.set_ecliptical(sphere.placidus(5), 0)
+    cusp5 = sphere.set_ecliptical(sphere.placidus(5)[0], 0)
     nsa = 180 - cusp5.dsa()
     lmd = 180 - cusp5.umd()
-    assert abs(lmd - nsa / 3) < 1e-10
+    assert abs(lmd - nsa / 3) < 1e-9
 
 
 def test_pluto_equatorial_coordinates():

@@ -205,7 +205,7 @@ def placidus_schema(sphere: Sphere, axs: Axes) -> None:
 
 def placidus(sphere: Sphere, axs: Axes, under_horizon: bool = False):
     """
-    Draw placidus lines on sphere
+    Draw placidus house lines on sphere
     """
     ramc = sphere.ramc
     _x = [[], [], [], [], [], ]
@@ -229,6 +229,31 @@ def placidus(sphere: Sphere, axs: Axes, under_horizon: bool = False):
 
     for i in range(0, 5):
         axs.plot(_x[i], _y[i], _z[i], linewidth=0.7, color='green')
+
+
+def regiomontanus(sphere: Sphere, axs: Axes, under_horizon: bool = False):
+    """
+    Draw regiomontanus house lines on sphere
+    """
+    # angle alpha betwen house-plane and horizon
+    cos_p = sphere.__constants__.cos_p
+    for i in range(1, 6):
+        alpha = np.arctan2(
+            cos_p * np.sin(np.pi * 30 * i / 180),
+            np.cos(np.pi * 30 * i / 180)
+        )
+        cos_a = np.cos(alpha)
+        sin_a = np.sin(alpha)
+
+        # Parameter angle for the curve
+        if under_horizon:
+            angle = np.linspace(np.pi / 2, np.pi * 3/2, 50)
+        else:
+            angle = np.linspace(-np.pi / 2, np.pi / 2, 50)
+        _x = np.cos(angle) * cos_a
+        _y = np.sin(angle)
+        _z = np.cos(angle) * sin_a
+        axs.plot(_x, _y, _z, linewidth=0.7, color='green')
 
 
 def zodiac_2d(sphere: Sphere, points: list[dict], axs: Axes) -> None:

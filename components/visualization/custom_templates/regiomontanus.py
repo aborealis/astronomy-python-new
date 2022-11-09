@@ -19,32 +19,22 @@ def points(sphere: Sphere) -> dict[dict]:
         color="red",
     )
 
+    cusps = [
+        dict(
+            lon=sphere.regiomontanus(num),
+            lat=0,
+            label=None,
+            color='grey',
+        )
+        for num in [12, 6, 11, 5, 4, 9, 3, 8, 2, 7]
+    ]
+
     point_mc = dict(
         lon=sphere.medium_coeli,
         lat=0,
         label="MC",
         color="orange",
     )
-
-    cusps = []
-    for num in [2, 3, 4, 5, 6, 7, 8, 9, 11, 12]:
-        cusp = sphere.placidus(num)
-        if cusp:
-            cusps += cusp
-
-    cusps = [
-        dict(
-            lon=lon,
-            lat=0,
-            label=None,
-            color="grey",
-        ) for lon in cusps
-    ]
-
-    cusps = [
-        item for item in cusps
-        if item['lon'] is not None
-    ]
 
     return dict(
         asc=point_asc,
@@ -65,17 +55,13 @@ def figures(sphere: Sphere, figure3d: Axes, figure2d: Axes) -> None:
     draw.horizon(sphere, figure3d)
     draw.equator(sphere, figure3d)
     draw.ecliptic(sphere, figure3d)
+    draw.eqt_projection(sphere, pnt['asc'], figure3d)
+    for cusp in pnt['cusps']:
+        draw.point(sphere, cusp, figure3d)
     draw.point(sphere, pnt['mc'], figure3d)
     draw.point(sphere, pnt['asc'], figure3d)
 
-    for cusp in pnt['cusps']:
-        draw.point(sphere, cusp, figure3d)
-
-    # # draw.semiarc(sphere, pnt['asc'], figure3d, 'UMD')
-    # # draw.semiarc(sphere, pnt['asc'], figure3d, 'DSA')
-    draw.eqt_projection(sphere, pnt['asc'], figure3d)
-    draw.ecl_projection(sphere, pnt['asc'], figure3d)
-    draw.placidus(sphere, figure3d, under_horizon=False)
+    draw.regiomontanus(sphere, figure3d, under_horizon=False)
     draw.zodiac_2d(sphere, [
         pnt['asc'], pnt['mc'], *pnt['cusps'],
     ], figure2d)

@@ -4,9 +4,9 @@ on the sphere, and converts it to different
 coordinate systems.
 """
 from datetime import datetime, timedelta
-from typing import Optional
+from typing import Optional, Callable
 from math import atan, tan, pi
-from numpy import sin, cos, arcsin as asin, arctan2 as atan2
+from numpy import sin, cos, arcsin as asin, arctan2 as atan2, arccos as acos
 from components.vector import time as tm
 from components.vector import coords as crd
 
@@ -360,6 +360,12 @@ class Sphere:
         _x = 1 - cos_t * tan_p * tan_e
         diff = (atan2(_y, _x) * 180 / pi) % 360
 
+        # Alternative formula
+        # tan_ra = -cos(self.ramc * pi / 180) / (
+        #     sin(self.ramc * pi / 180) + tan_e*tan_p
+        # )
+        # test_ra = atan(tan_ra) * 180 / pi % 360
+
         ra_asc = (tsa + diff) % 360
         _y = sin(diff * pi / 180)
         _x = tan_p
@@ -451,164 +457,153 @@ class Sphere:
         sin_ra = sin(rasc * pi / 180)
         return atan(sin_ra * tan_e) * 180 / pi
 
-    def __regions_of_zodiac_ascension(self, eastern: bool = True) -> list[list]:
+    @classmethod
+    def bisect_root(cls, func: Callable, x_min: float, x_max: float) -> float:
         """
-        Returns ranges in RAs of the eastern/western horizon where
-        Zodiac degrees are always ascending for a given latitude.
-        There could be a few regions with always ascending degrees
-        at extreme latitudes, so we return them all.
+        Finds the root of the function in [x_min, x_max]
         """
-        # ╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌
-        # The eastern part of equator goes
-        # from RAMC to RAIC and the eastern
-        # one goes from RAIC to RAMC
-        # ╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌
-        start, finish = self.ramc, (self.ramc + 180) % 360
-        if not eastern:
-            start, finish = finish, start
+        # If no single root in the interval
+        if func(x_min) * func(x_max) > 0:
+            return None
 
-        if self.__constants__.epsilon < self.__constants__.dec_max:
-            # ╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌
-            # In case of moderate latitudes
-            # there is only one region. It is
-            # the whole eatern/western part
-            # of the equator.
-            # ╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌
-            return [[start, finish]]
+        while True:
+            x_center = x_min + (x_max - x_min) * 0.618
+            if (func(x_min) * func(x_center)) > 0:
+                x_min = x_center
+            else:
+                x_max = x_center
+            if (x_max - x_min) < 1e-10:
+                break
+        return x_center
 
-        # ╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌
-        # Find 4 intersections between
-        # ecliptical plane and hourly
-        # circles at +-dec_max declination
-        # ╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌
-        dec_max = self.__constants__.dec_max
-        point0 = self.__zodiac_ra(dec_max)
-        intersections = [
-            point0, 180 + point0, 180 - point0, 360 - point0,
-        ]
-        intersections = [
-            crd.Equatorial(_ra, self.__zodiac_dec(_ra))
-            for _ra in intersections
-        ]
-
-        # Choose only eastern/western intersections
-        regions = []
-        for point in intersections:
-            xyz_eqt = self.__spherical_to_cartesian__(point.rasc, point.dec)
-            xyz_hrz = self.__eqt_to_hrz__(xyz_eqt)
-            if eastern and xyz_hrz.x > 0:
-                regions.append(point.rasc)
-            elif not eastern and xyz_hrz.x < 0:
-                regions.append(point.rasc)
-
-        # Order intersection by RA distance from RAMC
-        regions = [start, *regions, finish]
-        regions.sort(
-            key=lambda item: true_distance(item, start),
-            reverse=not eastern
-        )
-
-        # ╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌
-        # We will get rid of the situation
-        # when adjacent degrees differ from
-        # each other by more than 180 degrees.
-        # It may happen arond the edge between
-        # 360th and 0th degrees of the equator.
-        # ╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌
-        for _i in range(len(regions) - 1):
-            if abs(regions[_i] - regions[_i+1]) > 180:
-                if regions[_i] < 180:
-                    regions[_i] += 360
-                else:
-                    regions[_i+1] += 360
-
-        # ╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌
-        # Find the region with always-
-        # ascending zodiac degrees. Zodiac
-        # degree in the middle of such a
-        # region will always have a "safe"
-        # declination within [-d_max, d_max]
-        # ╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌
-        always_ascending = []
-        for _i in range(len(regions) - 1):
-            region_center = (regions[_i] + regions[_i + 1]) / 2
-            dec = self.__zodiac_dec(region_center)
-            if abs(dec) < dec_max:
-                if eastern:
-                    always_ascending.append([regions[_i], regions[_i + 1]])
-                else:
-                    always_ascending.append([regions[_i + 1], regions[_i]])
-
-        return always_ascending
-
-    def placidus(self, cusp: int) -> float:
+    def placidus(self, cusp: int) -> list[float]:
         """
-        Returns zodiac degree of the cusp in Placidus system
+        Returns zodiac degree of the cusp in Placidus system.
+        Since in subpolar extreme latitudes there may be more than
+        one cusp for 9th and 11th houses, the function returns
+        the list of cusp for a given house.
         """
         if cusp in [4, 7, 5, 6, 2, 3]:
             opposite_cusp = 12 if cusp == 6 else (cusp + 6) % 12
             opposite_cusp = self.placidus(opposite_cusp)
-            if opposite_cusp is None:
-                return None
-            return (opposite_cusp + 180) % 360
+            if not opposite_cusp:
+                return []
+            return [(cusp + 180) % 360 for cusp in opposite_cusp]
+        if cusp == 1:
+            return [self.asc]
+        if cusp == 10:
+            return [self.medium_coeli]
+
+        alpha = 1/3 if cusp in [11, 9] else 2/3
+        if cusp in [8, 9]:
+            alpha = -alpha
+        tan_p = self.__constants__.tan_p
+        tan_e = self.__constants__.tan_e
+
+        def func(_x):
+            """
+            Equation of intersection of placiduc curve and
+            ecliptic. The root of the equestion _x is the
+            tan(dec) of intersecting point.
+            """
+            asc_diff = asin(_x * tan_p)
+            dsa = pi / 2 + asc_diff
+            r_asc = self.ramc * pi / 180 + dsa * alpha
+            return sin(r_asc) * tan_e - _x
+
+        # We cannot exceed this declination while search for
+        # root of the function
+        decl_max = min(self.__constants__.dec_max,
+                       self.__constants__.epsilon)
+        x_max = tan(decl_max * pi / 180)
+
+        # Since we do not knoe the regions with roots,
+        # we will split interval [-x_max, x_max] into
+        # this number of subintervals
+        number_of_search_intervals = 8
+        search_intervals = [
+            [-x_max + _i * 2 * x_max/number_of_search_intervals,
+             -x_max + (_i + 1) * 2 * x_max/number_of_search_intervals
+             ]
+            for _i in range(number_of_search_intervals)
+        ]
+
+        # Make adjustments on the edges of
+        # [-x_max, x_max] interval to avoid uncertainty
+        # on the edges at extreme latitudes
+        search_intervals[0][0] += 1e-10
+        search_intervals[len(search_intervals) - 1][1] -= 1e-10
+
+        roots = []
+        for interval in search_intervals:
+            root = self.bisect_root(
+                func, interval[0], interval[1]
+            )
+            if root is not None:
+                roots.append(root)
+
+        if not roots:
+            return []
+
+        cusps = []
+        for root in roots:
+            dec_cusp = atan(root) * 180 / pi
+            ra_cusp = self.__zodiac_ra(dec_cusp) % 360
+
+            # Check which ra to choose
+            part_of_dsa = abs(self.dsa(dec_cusp) * alpha)
+            merid_dist = true_distance(ra_cusp, self.ramc)
+            if abs(merid_dist - part_of_dsa) > 1e-3:
+                ra_cusp = 180 - ra_cusp
+
+            # Converts RA and Dec into lon and lat
+            xyz_eqt = self.__spherical_to_cartesian__(
+                ra_cusp,
+                dec_cusp,
+            )
+            xyz_ecl = self.__eqt_to_ecl__(xyz_eqt)
+            cusps.append(
+                self.__cartesian_to_spherical__(xyz_ecl)[0]
+            )
+        return cusps
+
+    def regiomontanus(self, cusp: int) -> float:
+        """
+        Returns zodiac degree of the cusp in Regiomontanus system
+        """
+        if cusp in [4, 7, 5, 6, 2, 3]:
+            opposite_cusp = 12 if cusp == 6 else (cusp + 6) % 12
+            return (self.regiomontanus(opposite_cusp) + 180) % 360
         if cusp == 1:
             return self.asc
         if cusp == 10:
             return self.medium_coeli
 
-        alpha = 1/3 if cusp in [11, 9] else 2/3
-        if cusp in [11, 12]:
-            regions = self.__regions_of_zodiac_ascension()
-        else:
-            regions = self.__regions_of_zodiac_ascension(False)
+        tan_p = self.__constants__.tan_p
+        tan_e = self.__constants__.tan_e
+        cos_e = self.__constants__.cos_e
 
-        def bisected(rasc: float) -> float:
-            """
-            A function for bisection method
-            """
-            dec = self.__zodiac_dec(rasc)
-            dsa = self.dsa(dec)
-            umd = self.umd(rasc)
-            return umd - dsa * alpha
+        oa_asc = self.ramc + 90
+        cos_oa = cos(oa_asc * pi / 180)
+        sin_oa = sin(oa_asc * pi / 180)
 
-        for region in regions:
-            ra_min, ra_max = region
-            if ra_max < ra_min:
-                ra_max += 360
+        ra_w = self.ramc + (cusp - 10) * 30
+        tan_ra_w = tan(ra_w * pi / 180)
+        ra_w *= pi / 180
 
-            # To avoid uncertainty on the edges
-            ra_min += 1e-10
-            ra_max -= 1e-10
-            edges = [ra_min, ra_max]
+        _y = tan_ra_w
+        _x = 1 - tan_e * tan_p * (
+            cos_oa + sin_oa * tan_ra_w
+        )
 
-            while True:
-                ra_center = (ra_max + ra_min) / 2
-                if (bisected(ra_min) * bisected(ra_center)) > 0:
-                    ra_min = ra_center
-                else:
-                    ra_max = ra_center
-                if (ra_max - ra_min) < 1e-10:
-                    break
+        possible_cusp = atan(_y/_x / cos_e) * 180 / pi % 360
+        xyz_ecl = self.__spherical_to_cartesian__(possible_cusp, 0)
+        xyz_eqt = self.__ecl_to_eqt__(xyz_ecl)
+        xyz_hor = self.__eqt_to_hrz__(xyz_eqt)
+        if xyz_hor.z < 0:
+            possible_cusp += 180
 
-            # ╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌
-            # If the asymptotic bisectional method
-            # ends up with the right/left side of
-            # the initial region, it means there is
-            # no solution in that region - we skip
-            # it. Otherwise, we return the result.
-            # ╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌
-            if not (
-                abs(ra_max - edges[1]) < 1e-10 or
-                abs(ra_min - edges[0]) < 1e-10
-            ):
-                # Converts RA and Dec into lon and lat
-                xyz_eqt = self.__spherical_to_cartesian__(
-                    ra_center,
-                    self.__zodiac_dec(ra_center)
-                )
-                xyz_ecl = self.__eqt_to_ecl__(xyz_eqt)
-                return self.__cartesian_to_spherical__(xyz_ecl)[0]
-        return None
+        return possible_cusp % 360
 
 
 # ╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌
@@ -618,10 +613,10 @@ if __name__ == '__main__':
 
     # Initiate a celestial sphere object
     sphere = Sphere(
-        datetime(2022, 10, 10, 4, 20),
+        datetime(2022, 10, 10, 21, 20),
         time_zone=4,
         geo_lon=44 + 46/60,
-        geo_lat=66 + 43/60,
+        geo_lat=76 + 43/60,
     )
 
     # You can access properties of the sphere
@@ -647,6 +642,7 @@ if __name__ == '__main__':
     print('\nASC:')
     print('-', asc.equatorial())
     print('-', asc.horizontal())  # Altitude = 0 for ASC
+    print('-', asc.ecliptical())
     print('- oblique ascension:', asc.obl_asc())
     print('- ascension diff:', asc.asc_diff())
     print('- UMD:', asc.umd())
@@ -660,12 +656,16 @@ if __name__ == '__main__':
 
     # Eleventh house cusp
     cuspid = sphere.placidus(11)
-    print('\nH11:')
+    print('\nH11 (Placidus):')
     print('-', cuspid)
-    if cuspid is not None:
-        h11 = sphere.set_ecliptical(lon=cuspid, lat=0)
+    if cuspid:
+        h11 = sphere.set_ecliptical(lon=cuspid[0], lat=0)
         print('- UMD:', h11.umd())
         print('- DSA/3:', h11.dsa() / 3)  # UMD = DSA/3 for H11
+
+    cuspid = sphere.regiomontanus(11)
+    print('\nH11 (Regiomontanus):')
+    print('-', cuspid)
 
     # Aldebaran star
     aldebaran = sphere.set_equatorial(
