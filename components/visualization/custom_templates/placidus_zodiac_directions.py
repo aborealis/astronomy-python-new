@@ -9,6 +9,7 @@ from components.visualization import draw_placidus
 from components.visualization.draw_astrology_common import zodiac_2d
 
 ASPECT = 60
+FIELD_PLANE_LAT = -10
 
 
 def points(sphere: Sphere) -> dict[dict]:
@@ -33,7 +34,7 @@ def points(sphere: Sphere) -> dict[dict]:
 
     promissor_aspect = dict(
         lon=150 + ASPECT,
-        lat=0,
+        lat=FIELD_PLANE_LAT,
         label=None,
         color=(.7, .2, .7)
     )
@@ -65,7 +66,8 @@ def figures(sphere: Sphere, figure3d: Axes, figure2d: Axes) -> None:
     draw_sphere.ecliptic(sphere, figure3d)
     draw_sphere.horizon(sphere, figure3d)
     draw_sphere.equator(sphere, figure3d)
-    draw_placidus.zodiac_positions_placidus(sphere, pnt['promissor'], figure3d)
+    draw_placidus.zodiac_positions_placidus(
+        sphere, pnt['promissor'], figure3d, FIELD_PLANE_LAT)
     draw_placidus.meridian_distance_portions(sphere, pnt['acceptor'], figure3d)
     draw_sphere.point(sphere, pnt['promissor_aspect'], figure3d, line=True)
     draw_sphere.point(sphere, pnt['promissor'], figure3d, line=False)

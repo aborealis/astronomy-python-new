@@ -2,6 +2,7 @@
 Functions for matplotlib visualisation of
 Placidus house system and primary directions.
 """
+from typing import Optional
 import numpy as np
 from matplotlib.axes import Axes
 from sphere import Sphere
@@ -68,22 +69,22 @@ def mundane_positions(sphere: Sphere,
     draw.point(sphere, acceptor_data, axs)
 
     # Find mundane positions of the acceptor
-    mundane_positions = directions.aspect_positions_placidus_mundane(acceptor)
-    if not mundane_positions:
+    mund_positions = directions.aspect_positions_placidus_mundane(acceptor)
+    if not mund_positions:
         return None
     conjunction = [
-        item['rasc'] for item in mundane_positions
+        item['rasc'] for item in mund_positions
         if item['aspect'] == 0
     ][0]
-    mundane_positions = [
-        item['rasc'] for item in mundane_positions
+    mund_positions = [
+        item['rasc'] for item in mund_positions
     ]
 
     # Draw acceptor's mundane position
     xyz_hrz = sphere.set_equatorial(conjunction, 0).horizontal_xyz()
     _x0, _y0, _z0 = xyz_hrz.aslist()
 
-    for _m in mundane_positions:
+    for _m in mund_positions:
         xyz_hrz = sphere.set_equatorial(_m, 0).horizontal_xyz()
         _x, _y, _z = xyz_hrz.aslist()
         axs.plot([_x, _x0], [_y, _y0], [_z, _z0], color="#c4d6e7",
@@ -158,7 +159,9 @@ def direction_arc(sphere: Sphere,
 
 def zodiac_positions_placidus(sphere: Sphere,
                               promissor_data: dict,
-                              axs: Axes) -> None:
+                              axs: Axes,
+                              field_plane_lat: Optional[float] = 0,
+                              ) -> None:
     """
     Draws zodiac positions of the promissor
     """
@@ -177,11 +180,12 @@ def zodiac_positions_placidus(sphere: Sphere,
     ]
 
     # Draw promissor's aspect positions
-    xyz_hrz = sphere.set_ecliptical(promissor_data['lon'], 0).horizontal_xyz()
+    xyz_hrz = sphere.set_ecliptical(
+        promissor_data['lon'], field_plane_lat).horizontal_xyz()
     _x0, _y0, _z0 = xyz_hrz.aslist()
 
     for _m in aspect_positions:
-        xyz_hrz = sphere.set_ecliptical(_m, 0).horizontal_xyz()
+        xyz_hrz = sphere.set_ecliptical(_m, field_plane_lat).horizontal_xyz()
         _x, _y, _z = xyz_hrz.aslist()
         axs.plot([_x, _x0], [_y, _y0], [_z, _z0], color=(.7, .2, .7),
                  linewidth=0.8, linestyle='solid')

@@ -195,6 +195,27 @@ def test_placidus_zodiac_mon_tri_sat2():
     assert abs(shortest + 5.38) < 1e-1
 
 
+def test_placidus_field_plane_mon_sqr_asc():
+    """
+    Compare Moon-ASC zodiacal quadrature on field plane
+    latitude 5 N 11 with result of Bob Makransky
+    """
+    moon = sphere.set_ecliptical(
+        all_planets[1].lon,
+        0
+    )
+    asc = sphere.set_equatorial(
+        sphere.ramc + 90,
+        0
+    )
+
+    all_directions = directions.placidus_zodiac(
+        moon, asc, 90, field_plane_lat=5 + 11/60)
+    all_directions.sort(key=lambda item: abs(item['dist']))
+    shortest = all_directions[0]['dist']
+    assert abs(shortest + 14.63) < 1e-1
+
+
 def test_regio_mundi_sun_conj_mer():
     """
     Compare Sun-Mercury mundane conj in Regiomontanus system

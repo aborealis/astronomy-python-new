@@ -184,7 +184,9 @@ class Directions:
     def placidus_zodiac(self,
                         promissor: crd.Vector,
                         acceptor: crd.Vector,
-                        aspect: Optional[int] = None) -> list[dict]:
+                        aspect: Optional[int] = None,
+                        field_plane_lat: Optional[float] = 0,
+                        ) -> list[dict]:
         """
         Returns zodiacal primary directions of the promissor's
         aspect points to the acceptor
@@ -195,7 +197,8 @@ class Directions:
         # Find conjunctions of the promissor with these aspect positions
         directions = []
         for item in aspect_positions:
-            new_promissor = self.sphere.set_ecliptical(item['lon'], 0)
+            new_promissor = self.sphere.set_ecliptical(
+                item['lon'], field_plane_lat)
             arc = self.placidus_mundane(
                 new_promissor, acceptor, aspect=0
             )
@@ -305,5 +308,7 @@ if __name__ == '__main__':
     accpt = test_sphere.set_ecliptical(140, 0)
 
     print(test_directions.placidus_mundane(proms, accpt, aspect=None))
-    print(test_directions.placidus_zodiac(proms, accpt, aspect=None))
+    print(test_directions.placidus_zodiac(proms, accpt, aspect=0))
+    print(test_directions.placidus_zodiac(
+        proms, accpt, aspect=0, field_plane_lat=10))
     print(test_directions.regio_mundane(proms, accpt, aspect=0))
