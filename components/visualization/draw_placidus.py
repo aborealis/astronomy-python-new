@@ -2,7 +2,6 @@
 Functions for matplotlib visualisation of
 Placidus house system and primary directions.
 """
-from typing import Optional
 import numpy as np
 from matplotlib.axes import Axes
 from sphere import Sphere
@@ -155,43 +154,3 @@ def direction_arc(sphere: Sphere,
     return arc(
         sphere, promissor_data, acceptor_data, aspect, axs, system='P'
     )
-
-
-def zodiac_positions_placidus(sphere: Sphere,
-                              promissor_data: dict,
-                              axs: Axes,
-                              field_plane_lat: Optional[float] = 0,
-                              ) -> None:
-    """
-    Draws zodiac positions of the promissor
-    """
-    # Set acceptor
-    directions = Directions(sphere)
-    promissor = sphere.set_ecliptical(
-        promissor_data['lon'], promissor_data['lat'])
-
-    # Find aspect positions of the acceptor
-    aspect_positions = directions.aspect_positions_placidus_zodiac(promissor)
-    if not aspect_positions:
-        return None
-    aspect_positions = [
-        item['lon'] for item in aspect_positions
-        if item['aspect']
-    ]
-
-    # Draw promissor's aspect positions
-    xyz_hrz = sphere.set_ecliptical(
-        promissor_data['lon'], field_plane_lat).horizontal_xyz()
-    _x0, _y0, _z0 = xyz_hrz.aslist()
-
-    for _m in aspect_positions:
-        xyz_hrz = sphere.set_ecliptical(_m, field_plane_lat).horizontal_xyz()
-        _x, _y, _z = xyz_hrz.aslist()
-        axs.plot([_x, _x0], [_y, _y0], [_z, _z0], color=(.7, .2, .7),
-                 linewidth=0.8, linestyle='solid')
-        axs.scatter(
-            _x, _y, _z,
-            color=(.7, .2, .7),
-            label=None
-        )
-    return None

@@ -5,11 +5,11 @@ a Placidus house system.
 from matplotlib.axes import Axes
 from sphere import Sphere
 from components.visualization import draw_sphere
-from components.visualization import draw_placidus
+from components.visualization import draw_regiomontanus
 from components.visualization.draw_astrology_common import zodiac_2d, zodiac_positions
 
 ASPECT = 60
-FIELD_PLANE_LAT = -10
+FIELD_PLANE_LAT = -3
 
 
 def points(sphere: Sphere) -> dict[dict]:
@@ -68,14 +68,14 @@ def figures(sphere: Sphere, figure3d: Axes, figure2d: Axes) -> None:
     draw_sphere.equator(sphere, figure3d)
     zodiac_positions(
         sphere, pnt['promissor'], figure3d, FIELD_PLANE_LAT)
-    draw_placidus.meridian_distance_portions(sphere, pnt['acceptor'], figure3d)
     draw_sphere.point(sphere, pnt['promissor_aspect'], figure3d, line=True)
     draw_sphere.point(sphere, pnt['promissor'], figure3d, line=False)
     draw_sphere.point(sphere, pnt['acceptor'], figure3d, line=False)
-    end_point_data = draw_placidus.direction_arc(
+    end_point_data = draw_regiomontanus.direction_arc(
         sphere,
         pnt['promissor_aspect'],
         pnt['acceptor'],
         0, figure3d)
+    draw_regiomontanus.regiomontanus_curve(sphere, end_point_data, figure3d)
     zodiac_2d(
         sphere, [end_point_data, pnt['promissor_aspect']], figure2d)

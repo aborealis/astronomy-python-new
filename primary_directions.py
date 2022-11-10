@@ -167,11 +167,11 @@ class Directions:
         return directions
 
     # ╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌
-    # Placidus zodiacal directions:
+    # Zodiacal directions common methods:
     # ╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌
-    def aspect_positions_placidus_zodiac(self,
-                                         promissor: crd.Vector,
-                                         aspect: Optional[int] = None) -> Optional[list[dict]]:
+    def aspect_positions_zodiac(self,
+                                promissor: crd.Vector,
+                                aspect: Optional[int] = None) -> Optional[list[dict]]:
         """
         Returns zodiacal aspect positions of the
         promissor. It is the projection of the
@@ -180,6 +180,38 @@ class Directions:
         """
         prom_lon = promissor.ecliptical().lon
         return [dict(lon=(prom_lon + _a) % 360, aspect=abs(_a)) for _a in possible_aspects(aspect)]
+
+    def __zodiacal_directions(self,
+                              promissor: crd.Vector,
+                              acceptor: crd.Vector,
+                              aspect: Optional[int] = None,
+                              field_plane_lat: Optional[float] = 0,
+                              house_system: str = 'P',
+                              ) -> list[dict]:
+        """
+        Returns zodiacal primary directions of the promissor's
+        aspect points to the acceptor
+        """
+        aspect_positions = self.aspect_positions_zodiac(
+            promissor, aspect)
+
+        # Find conjunctions of the promissor with these aspect positions
+        direction_func = self.placidus_mundane if house_system == 'P' else self.regio_mundane
+
+        directions = []
+        for item in aspect_positions:
+            new_promissor = self.sphere.set_ecliptical(
+                item['lon'], field_plane_lat)
+            arc = direction_func(
+                new_promissor, acceptor, aspect=0
+            )
+
+            # In case of no ascension:
+            if not arc:
+                continue
+            directions.append(dict(dist=arc[0]['dist'], aspect=item['aspect']))
+
+        return directions
 
     def placidus_zodiac(self,
                         promissor: crd.Vector,
@@ -191,24 +223,9 @@ class Directions:
         Returns zodiacal primary directions of the promissor's
         aspect points to the acceptor
         """
-        aspect_positions = self.aspect_positions_placidus_zodiac(
-            promissor, aspect)
-
-        # Find conjunctions of the promissor with these aspect positions
-        directions = []
-        for item in aspect_positions:
-            new_promissor = self.sphere.set_ecliptical(
-                item['lon'], field_plane_lat)
-            arc = self.placidus_mundane(
-                new_promissor, acceptor, aspect=0
-            )
-
-            # In case of no ascension:
-            if not arc:
-                continue
-            directions.append(dict(dist=arc[0]['dist'], aspect=item['aspect']))
-
-        return directions
+        return self.__zodiacal_directions(
+            promissor, acceptor, aspect, field_plane_lat, house_system='P'
+        )
 
     # ╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌
     # Regiomontanus mundane directions:
@@ -286,6 +303,20 @@ class Directions:
             ) for item in aspect_positions
         ]
 
+    def regio_zodiac(self,
+                     promissor: crd.Vector,
+                     acceptor: crd.Vector,
+                     aspect: Optional[int] = None,
+                     field_plane_lat: Optional[float] = 0,
+                     ) -> list[dict]:
+        """
+        Returns zodiacal primary directions of the promissor's
+        aspect points to the acceptor
+        """
+        return self.__zodiacal_directions(
+            promissor, acceptor, aspect, field_plane_lat, house_system='R'
+        )
+
 
 # ╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌
 # Example of usage:
@@ -312,3 +343,5 @@ if __name__ == '__main__':
     print(test_directions.placidus_zodiac(
         proms, accpt, aspect=0, field_plane_lat=10))
     print(test_directions.regio_mundane(proms, accpt, aspect=0))
+    print(test_directions.regio_zodiac(
+        proms, accpt, aspect=None, field_plane_lat=0))

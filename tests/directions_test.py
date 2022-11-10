@@ -267,3 +267,42 @@ def test_regio_mundi_mon_tri_sat():
     all_directions.sort(key=lambda item: abs(item['dist']))
     shortest = all_directions[0]['dist']
     assert abs(shortest + 3.19) < 1e-1
+
+
+def test_regio_zodiac_mon_tri_sat():
+    """
+    Compare Sat-Venus zodiac conj in Regiomontanus system
+    with result of Bob Makransky
+    """
+    sat = sphere.set_ecliptical(
+        all_planets[6].lon,
+        all_planets[6].lat
+    )
+    mon = sphere.set_ecliptical(
+        all_planets[1].lon,
+        all_planets[1].lat
+    )
+    all_directions = directions.regio_zodiac(mon, sat, 120)
+    all_directions.sort(key=lambda item: abs(item['dist']))
+    shortest = all_directions[0]['dist']
+    assert abs(shortest + 5.5) < 1e-1
+
+
+def test_regio_field_plane_mon_tri_sat():
+    """
+    Compare Moon-ASC zodiacal quadrature on field plane
+    latitude 4 N 41 with result of Bob Makransky
+    """
+    sat = sphere.set_ecliptical(
+        all_planets[6].lon,
+        all_planets[6].lat
+    )
+    mon = sphere.set_ecliptical(
+        all_planets[1].lon,
+        all_planets[1].lat
+    )
+    all_directions = directions.regio_zodiac(
+        mon, sat, 120, field_plane_lat=4 + 41/60)
+    all_directions.sort(key=lambda item: abs(item['dist']))
+    shortest = all_directions[0]['dist']
+    assert abs(shortest + 7.97) < 1e-1
