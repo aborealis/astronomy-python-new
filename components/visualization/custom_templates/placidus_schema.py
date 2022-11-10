@@ -4,7 +4,8 @@ a Placidus house system.
 """
 from matplotlib.axes import Axes
 from sphere import Sphere
-from components.visualization import draw
+from components.visualization import draw_sphere
+from components.visualization import draw_placidus
 
 
 def points(sphere: Sphere) -> dict[dict]:
@@ -40,12 +41,12 @@ def figures(sphere: Sphere, figure3d: Axes, figure2d: Axes) -> None:
     """
 
     pnt = points(sphere)
-    draw.surface(sphere, figure3d)
-    draw.ecliptic(sphere, figure3d)
-    draw.horizon(sphere, figure3d)
-    draw.equator(sphere, figure3d)
-    draw.point(sphere, pnt['mc'], figure3d)
-    draw.point(sphere, pnt['asc'], figure3d)
+    draw_sphere.surface(sphere, figure3d)
+    draw_sphere.ecliptic(sphere, figure3d)
+    draw_sphere.horizon(sphere, figure3d)
+    draw_sphere.equator(sphere, figure3d)
+    draw_sphere.point(sphere, pnt['mc'], figure3d)
+    draw_sphere.point(sphere, pnt['asc'], figure3d)
 
-    draw.placidus(sphere, figure3d)
-    draw.placidus_schema(sphere, figure3d)
+    draw_placidus.placidus(sphere, figure3d)
+    draw_placidus.placidus_schema(sphere, figure3d)

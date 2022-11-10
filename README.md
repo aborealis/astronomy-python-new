@@ -88,7 +88,7 @@ asc.asc_diff()
 >>> 10.86036453571822
 
 # Upper Meridian Distance, UMD
-cusp11 = sphere.set_ecliptical(lon=sphere.placidus(11), lat=0)
+cusp11 = sphere.set_ecliptical(lon=sphere.placidus(11)[0], lat=0)
 cusp11.umd()
 >>> 50.603001275330115
 

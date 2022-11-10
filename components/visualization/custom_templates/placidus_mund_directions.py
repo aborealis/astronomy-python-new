@@ -4,9 +4,11 @@ a Placidus house system.
 """
 from matplotlib.axes import Axes
 from sphere import Sphere
-from components.visualization import draw
+from components.visualization import draw_sphere
+from components.visualization import draw_astrology_common
+from components.visualization import draw_placidus
 
-ASPECT = 60
+ASPECT = 90
 
 
 def points() -> dict[dict]:
@@ -44,17 +46,20 @@ def figures(sphere: Sphere, figure3d: Axes, figure2d: Axes) -> None:
     """
 
     pnt = points()
-    draw.surface(sphere, figure3d)
-    draw.ecliptic(sphere, figure3d)
-    draw.horizon(sphere, figure3d)
-    draw.equator(sphere, figure3d)
-    draw.mundane_positions_placidus(sphere, pnt['acceptor'], figure3d)
-    draw.meridian_distance_portions(sphere, pnt['acceptor'], figure3d)
-    draw.point(sphere, pnt['promissor'], figure3d, line=False)
-    end_point_data = draw.direction_arc(
+    draw_sphere.surface(sphere, figure3d)
+    draw_sphere.ecliptic(sphere, figure3d)
+    draw_sphere.horizon(sphere, figure3d)
+    draw_sphere.equator(sphere, figure3d)
+    draw_placidus.mundane_positions(sphere, pnt['acceptor'], figure3d)
+    draw_placidus.meridian_distance_portions(sphere, pnt['acceptor'], figure3d)
+    draw_sphere.point(sphere, pnt['promissor'], figure3d, line=False)
+    end_point_data = draw_placidus.direction_arc(
         sphere,
         pnt['promissor'],
         pnt['acceptor'],
-        60, figure3d)
-    draw.meridian_distance_portions(sphere, end_point_data, figure3d)
-    draw.zodiac_2d(sphere, [end_point_data, pnt['acceptor']], figure2d)
+        ASPECT, figure3d)
+    if end_point_data is not None:
+        draw_placidus.meridian_distance_portions(
+            sphere, end_point_data, figure3d)
+        draw_astrology_common.zodiac_2d(
+            sphere, [end_point_data, pnt['acceptor']], figure2d)

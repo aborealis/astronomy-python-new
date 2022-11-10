@@ -6,7 +6,7 @@ coordinate systems.
 from datetime import datetime, timedelta
 from typing import Optional, Callable
 from math import atan, tan, pi
-from numpy import sin, cos, arcsin as asin, arctan2 as atan2, arccos as acos
+from numpy import sin, cos, arcsin as asin, arctan2 as atan2
 from components.vector import time as tm
 from components.vector import coords as crd
 
@@ -449,13 +449,13 @@ class Sphere:
         tan_e = self.__constants__.tan_e
         return asin(tan_d / tan_e) * 180 / pi
 
-    def __zodiac_dec(self, rasc: float) -> float:
-        """
-        Returns zodiac declination from the RA
-        """
-        tan_e = self.__constants__.tan_e
-        sin_ra = sin(rasc * pi / 180)
-        return atan(sin_ra * tan_e) * 180 / pi
+    # def __zodiac_dec(self, rasc: float) -> float:
+    #     """
+    #     Returns zodiac declination from the RA
+    #     """
+    #     tan_e = self.__constants__.tan_e
+    #     sin_ra = sin(rasc * pi / 180)
+    #     return atan(sin_ra * tan_e) * 180 / pi
 
     @classmethod
     def bisect_root(cls, func: Callable, x_min: float, x_max: float) -> float:

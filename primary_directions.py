@@ -2,6 +2,7 @@
 Astrological calculations for primary directions
 """
 from datetime import datetime
+from math import tan, sin, cos, pi, atan2, asin
 from typing import Optional
 from components.vector import coords as crd
 from sphere import Sphere, true_distance
@@ -206,6 +207,82 @@ class Directions:
 
         return directions
 
+    # ╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌
+    # Regiomontanus mundane directions:
+    # ╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌
+
+    def __oblique_asc_utp__(self, rasc: float, dec: float) -> float:
+        """
+        Returns oblique ascension under the pole
+        for a given point.
+        """
+        tan_p = self.sphere.__constants__.tan_p
+        tan_d = tan(dec * pi / 180)
+
+        oa_asc = self.sphere.ramc + 90
+        cos_oa = cos(oa_asc * pi / 180)
+        sin_oa = sin(oa_asc * pi / 180)
+
+        _y = sin(rasc * pi / 180) - tan_d * tan_p * cos_oa
+        _x = cos(rasc * pi / 180) + tan_d * tan_p * sin_oa
+        return atan2(_y, _x) * 180 / pi
+
+    def __ra_from_oa_utp__(self, dec: float, oa_utp: float) -> float:
+        """
+        Returns right ascension of the point with a
+        given declination and oblique ascension under the pole
+        """
+        tan_d = tan(dec * pi / 180)
+        tan_p = self.sphere.__constants__.tan_p
+        sin_t = sin((oa_utp - self.sphere.ramc) * pi / 180)
+
+        return asin(
+            tan_d * tan_p * sin_t
+        ) * 180 / pi + oa_utp
+
+    def aspect_positions_regio_mundane(self,
+                                       acceptor: crd.Vector,
+                                       aspect: Optional[int] = None) -> Optional[list[float]]:
+        """
+        Returns mundane aspect positions of the acceptor.
+        It is the oblique ascension under the pole on
+        equator, plus all major aspects to that point on
+        the equatorial plane.
+        """
+        oa_utp = self.__oblique_asc_utp__(
+            acceptor.equatorial().rasc,
+            acceptor.equatorial().dec
+        )
+        # Find aspect positions of that point on the equator plane
+        return [
+            dict(rasc=(oa_utp + _a) % 360, aspect=abs(_a))
+            for _a in possible_aspects(aspect)
+        ]
+
+    def regio_mundane(self,
+                      promissor: crd.Vector,
+                      acceptor: crd.Vector,
+                      aspect: Optional[int] = None) -> Optional[list[dict]]:
+        """
+        Returns mundane primary directions of the promissor
+        to aspect points of the acceptor
+        """
+        # Find acceptor's aspect positions on the equator
+        aspect_positions = self.aspect_positions_regio_mundane(
+            acceptor, aspect)
+
+        promissor_eqt = promissor.equatorial()
+        promissor_rasc = promissor_eqt.rasc
+        promissor_dec = promissor_eqt.dec
+
+        return [
+            dict(
+                dist=promissor_rasc - self.__ra_from_oa_utp__(
+                    promissor_dec, item['rasc']),
+                aspect=item['aspect']
+            ) for item in aspect_positions
+        ]
+
 
 # ╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌
 # Example of usage:
@@ -213,10 +290,10 @@ class Directions:
 if __name__ == '__main__':
     # Initiate a celestial sphere object
     test_sphere = Sphere(
-        datetime(2022, 10, 10, 4, 20),
+        datetime(2022, 10, 10, 23, 20),
         time_zone=4,
         geo_lon=44 + 46/60,
-        geo_lat=66 + 43/60,
+        geo_lat=56 + 43/60,
     )
 
     test_directions = Directions(test_sphere)
@@ -225,7 +302,8 @@ if __name__ == '__main__':
     proms = test_sphere.set_ecliptical(150, 0)
 
     # Set the 2nd point
-    accpt = test_sphere.set_ecliptical(116.92, 0)
+    accpt = test_sphere.set_ecliptical(140, 0)
 
     print(test_directions.placidus_mundane(proms, accpt, aspect=None))
     print(test_directions.placidus_zodiac(proms, accpt, aspect=None))
+    print(test_directions.regio_mundane(proms, accpt, aspect=0))

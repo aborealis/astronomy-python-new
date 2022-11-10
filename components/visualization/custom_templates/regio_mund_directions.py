@@ -1,17 +1,17 @@
 """
 Define points and figures to display
-a Placidus house system.
+a Regiomontanus house system.
 """
 from matplotlib.axes import Axes
 from sphere import Sphere
 from components.visualization import draw_sphere
-from components.visualization import draw_placidus
+from components.visualization import draw_regiomontanus
 from components.visualization.draw_astrology_common import zodiac_2d
 
 ASPECT = 60
 
 
-def points(sphere: Sphere) -> dict[dict]:
+def points() -> dict[dict]:
     """
     Returns a dictionary of points to display on
     celestial_sphere and on Zodiac circle
@@ -31,25 +31,10 @@ def points(sphere: Sphere) -> dict[dict]:
         color="red",
     )
 
-    promissor_aspect = dict(
-        lon=150 + ASPECT,
-        lat=0,
-        label=None,
-        color=(.7, .2, .7)
-    )
-
-    point_mc = dict(
-        lon=sphere.medium_coeli,
-        lat=0,
-        label="MC",
-        color="orange",
-    )
-
     return dict(
         acceptor=acceptor,
         promissor=promissor,
-        promissor_aspect=promissor_aspect,
-        mc=point_mc,
+        label="MC"
     )
 
 
@@ -60,20 +45,19 @@ def figures(sphere: Sphere, figure3d: Axes, figure2d: Axes) -> None:
     sphere and Zodiac circle
     """
 
-    pnt = points(sphere)
+    pnt = points()
     draw_sphere.surface(sphere, figure3d)
     draw_sphere.ecliptic(sphere, figure3d)
     draw_sphere.horizon(sphere, figure3d)
     draw_sphere.equator(sphere, figure3d)
-    draw_placidus.zodiac_positions_placidus(sphere, pnt['promissor'], figure3d)
-    draw_placidus.meridian_distance_portions(sphere, pnt['acceptor'], figure3d)
-    draw_sphere.point(sphere, pnt['promissor_aspect'], figure3d, line=True)
     draw_sphere.point(sphere, pnt['promissor'], figure3d, line=False)
     draw_sphere.point(sphere, pnt['acceptor'], figure3d, line=False)
-    end_point_data = draw_placidus.direction_arc(
+    draw_regiomontanus.mundane_positions(
+        sphere, pnt['acceptor'], figure3d)
+    end_point_data = draw_regiomontanus.direction_arc(
         sphere,
-        pnt['promissor_aspect'],
+        pnt['promissor'],
         pnt['acceptor'],
-        0, figure3d)
-    zodiac_2d(
-        sphere, [end_point_data, pnt['promissor_aspect']], figure2d)
+        ASPECT, figure3d)
+    draw_regiomontanus.regiomontanus_curve(sphere, end_point_data, figure3d)
+    zodiac_2d(sphere, [end_point_data, pnt['acceptor']], figure2d)
