@@ -12,6 +12,8 @@ It is a handy tool for astronomy teachers, scientists, and astrologers.
 
 ## The usage
 
+### Celestial Sphere
+
 Import the Sphere class and init the sphere object with the current observer's local time and geo coordinates. Remember to put negative values for western longitudes and southern latitudes.
 
 ```python
@@ -24,7 +26,7 @@ sphere = Sphere(
 )
 ```
 
-Now you can access to general information about celestial sphere
+Now you can access general information about celestial sphere
 
 ```python
 # Local Sidereal Time, LST in hours
@@ -52,9 +54,11 @@ sphere.medium_coeli
 # House Cusp in Placidus System. It
 # works even at extreme latitudes for
 # the regions of the ascendible part
-# of the ecliptic plane.
+# of the ecliptic plane. For Placidus
+# system it returns the list of zodiac
+# degrees corrsponding to a house cusp
 sphere.placidus(11)
->>> 116.92134279023504
+>>> [116.92134279023504]
 ```
 
 Now you can specify the stellar point in any coordibate system:
@@ -96,6 +100,106 @@ cusp11.umd()
 # Check 1/3 of cusp11'th DSA:
 cusp11.dsa() / 3
 >>> 50.603001275330115
+```
+
+### Ephemeris data
+
+You can access ephemeris data - the position of 10 planets and stars on a celestioal sphere
+
+```python
+from sphere import Sphere,
+from components.vector.planets_and_stars import StellarObject
+
+# Init a celestial sphere
+test_sphere = Sphere(
+    datetime(2022, 10, 10, 23, 20),
+    time_zone=4,
+    geo_lon=44 + 46/60,
+    geo_lat=56 + 43/60,
+)
+
+# Init objects (stars and planets) on the sphere
+stellar_objects = StellarObject(test_sphere)
+
+# Get zodiacalal coordinates of any given star
+regulus = [
+    star
+    for star in stellar_objects.stars
+    if 'Regulus' in star.name
+][0]
+>>> Star(name='Regulus,alLeo', lon=150.13901460538463, lat=0.4657496646008069)
+
+# Convert these coordinates into equatorial system
+regulus = test_sphere.set_ecliptical(regulus.lon, regulus.lat)
+print('Regulus', regulus.equatorial())
+>>> Regulus Equatorial(rasc=152º 23'21"|152.3892º, dec=11º 51'27"|11.8576º)
+
+
+# You can do the same with planets in a list:
+# Sun, Mon, Mer, Ven, Mar, Jup, Sat, Ura, Nep, Plu
+moon = stellar_objects.planets[1]
+>>> Planet(lon=29.04820795728872, lat=-1.3049085239554339)
+```
+
+### Primary directions (for astrologers)
+
+You can use this module to calculate primary directions in Placidus and Regiomontanus house systems.
+
+```python
+from sphere import Sphere
+from primary_directions import Directions
+from components.vector.planets_and_stars import StellarObject
+
+# Init a celestial sphere
+test_sphere = Sphere(
+    datetime(2022, 10, 10, 23, 20),
+    time_zone=4,
+    geo_lon=44 + 46/60,
+    geo_lat=56 + 43/60,
+)
+
+# Init planets and stars on a sphere
+stellar_objects = StellarObject(test_sphere)
+
+# Init directions object
+test_directions = Directions(test_sphere)
+
+# Set the promissor (ASC in this example), and convert it
+# into equatorial coordinates
+proms = test_sphere.set_ecliptical(
+    lon=test_sphere.asc, 
+    lat=0
+)
+
+# Set the acceptor (Saturn in this example) and converts it
+# into equetorial coordinates
+accpt = stellar_objects.planets[6]
+accpt = test_sphere.set_ecliptical(accpt.lon, accpt.lat)
+
+# You can now get all directions from promissor to acceptor
+# in Placidus system
+test_directions.placidus_mundane(proms, accpt, aspect=None)
+>>> [{'dist': -63.16142971658576, 'aspect': 120}, {'dist': -81.4413232982863, 'aspect': 90}, {'dist': -99.72121687998697, 'aspect': 60}, {'dist': -170.39215247337597, 'aspect': 0}, {'dist': 106.16763469002524, 'aspect': 60}, {'dist': 64.4475282717259, 'aspect': 90}, {'dist': 22.72742185342645, 'aspect': 120}, {'dist': -26.60164255318449, 'aspect': 180}]
+
+# To get a direction to a specific aspect point
+# 0, 60, 90, 120, or 180, put it as 'aspect argument'
+# f.e., a zodiacal conjunction in Placidus house
+# system:
+test_directions.placidus_zodiac(proms, accpt, aspect=90)
+>>> [{'dist': -81.4413232982863, 'aspect': 90}, {'dist': 64.4475282717259, 'aspect': 90}]
+
+# If you pass a latitude a field plane latitude (in degrees),
+# you'll get a field plane direction:
+test_directions.placidus_zodiac(proms, accpt, aspect=0, field_plane_lat=10)
+>>> [{'dist': -153.3902504689405, 'aspect': 0}]
+
+# In a similar way you can get directions in Regiomontanus
+# house system:
+test_directions.regio_mundane(proms, accpt, aspect=120)
+>>> [{'dist': -57.43497088764636, 'aspect': 120}, {'dist': 27.280987758262015, 'aspect': 120}]
+
+test_directions.regio_zodiac(proms, accpt, aspect=60, field_plane_lat=10)
+>>> [{'dist': -204.3099168368223, 'aspect': 60}, {'dist': -105.88213931239125, 'aspect': 60}]
 ```
 
 ## Visualization

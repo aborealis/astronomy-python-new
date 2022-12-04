@@ -39,7 +39,13 @@ class Sphere:
         localtime_utc = tm.__localtime_utc__(localtime)
         epsilon = tm.__inclination_ecliptic__(localtime_utc)
 
+        self.naive_datetime = naive_datetime
+        self.time_zone = time_zone
+        self.localtime_utc = localtime_utc
+        self.jday = tm.__julian_day__(localtime_utc)
         self.lst = tm.__lst__(localtime_utc, geo_lon)
+        self.geo_lon = geo_lon
+        self.geo_lat = geo_lat
         self.__equatorial = None
         self.__equatorial_xyz = None
         self.ramc = self.lst * 15
@@ -613,10 +619,10 @@ if __name__ == '__main__':
 
     # Initiate a celestial sphere object
     sphere = Sphere(
-        datetime(2022, 10, 10, 21, 20),
+        datetime(2022, 10, 10, 4, 20),
         time_zone=4,
         geo_lon=44 + 46/60,
-        geo_lat=76 + 43/60,
+        geo_lat=66 + 43/60,
     )
 
     # You can access properties of the sphere

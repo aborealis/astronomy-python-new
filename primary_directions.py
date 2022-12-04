@@ -5,6 +5,7 @@ from datetime import datetime
 from math import tan, sin, cos, pi, atan2, asin
 from typing import Optional
 from components.vector import coords as crd
+from components.vector.planets_and_stars import StellarObject
 from sphere import Sphere, true_distance
 
 
@@ -330,18 +331,33 @@ if __name__ == '__main__':
         geo_lat=56 + 43/60,
     )
 
+    stellar_objects = StellarObject(test_sphere)
     test_directions = Directions(test_sphere)
 
+    # Position of the fixed star Regulus
+    regulus = [
+        star
+        for star in stellar_objects.stars
+        if 'Regulus' in star.name
+    ][0]
+    regulus = test_sphere.set_ecliptical(regulus.lon, regulus.lat)
+    print('Regulus', regulus.equatorial())
+
+    # Position of the Moon
+    moon = stellar_objects.planets[1]
+    print(moon)
+
     # Set the 1st point
-    proms = test_sphere.set_ecliptical(150, 0)
+    proms = test_sphere.set_ecliptical(test_sphere.asc, 0)
 
     # Set the 2nd point
-    accpt = test_sphere.set_ecliptical(140, 0)
+    accpt = stellar_objects.planets[6]
+    accpt = test_sphere.set_ecliptical(accpt.lon, accpt.lat)
 
-    print(test_directions.placidus_mundane(proms, accpt, aspect=None))
+    print(test_directions.placidus_mundane(proms, accpt, aspect=90))
     print(test_directions.placidus_zodiac(proms, accpt, aspect=0))
     print(test_directions.placidus_zodiac(
         proms, accpt, aspect=0, field_plane_lat=10))
-    print(test_directions.regio_mundane(proms, accpt, aspect=0))
+    print('Regio', test_directions.regio_mundane(proms, accpt, aspect=120))
     print(test_directions.regio_zodiac(
-        proms, accpt, aspect=None, field_plane_lat=0))
+        proms, accpt, aspect=60, field_plane_lat=10))
